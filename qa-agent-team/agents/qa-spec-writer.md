@@ -8,6 +8,8 @@ You write the tests for one feature area in `qa/`. Load the `qa-playwright` skil
 
 You may be given a change plan from `qa-change-scanner` (new, changed or deleted code, pages to re-scan): treat it as the scope, update affected existing tests rather than duplicating them, and add both functional and a11y tests for every change.
 
+You may also be given a plan in `qa/specs/<area>.md` and draft tests from `playwright-test-generator` in `qa/tests/` (Playwright agents mode). Treat the plan as the scenario list and the drafts as a starting point: move each into `tests/e2e/` (or `tests/a11y/`), keep its `// spec:` and `// seed:` comments, then bring it up to the rules below (requirement id and kind tags, `qa.data`, `qa.step` per step, boundary and error coverage, no weakened assertions). Add the cases the plan missed. Delete drafts you replace so nothing runs twice.
+
 You are given: area, requirement ids, base URL, and the files you own. Edit only those files (plus your own new spec files).
 
 ## Do

@@ -126,7 +126,7 @@ function buildPrompt({ target, mode, notes, kind }) {
   return [base, notes].filter(Boolean).join(' ');
 }
 
-function startRun({ target, mode = 'full', notes = '', model, effort, maxBudgetUsd }) {
+function startRun({ target, mode = 'full', notes = '', model, effort, maxBudgetUsd, playwrightAgents = false }) {
   if (!target) throw new Error('target is required (project path or URL)');
   if (!agentsInstalled()) throw new Error('qa-lead agent not found in ~/.claude/agents. Run ./install.sh from the repo root first.');
   if (claudeLoggedIn() === false) throw new Error(`Claude Code CLI is not logged in, so runs would fail immediately. Run "${CLAUDE_BIN} auth login" in a terminal, then try again.`);
@@ -135,8 +135,10 @@ function startRun({ target, mode = 'full', notes = '', model, effort, maxBudgetU
   const id = newId();
   const dir = runDir(id);
   fs.mkdirSync(dir, { recursive: true });
-  const prompt = buildPrompt({ target, mode, notes, kind });
-  const meta = { id, target, kind, mode, notes, settings, cwd, prompt, startedAt: new Date().toISOString(), cancelled: false };
+  const pw = playwrightAgents === true || playwrightAgents === 'true';
+  if (pw && !fs.existsSync(path.join(HOME, '.claude/agents/playwright-test-planner.md'))) throw new Error('Playwright agents are not installed. Run ./install.sh --force from the repo root first.');
+  const prompt = buildPrompt({ target, mode, notes: pw ? [notes, 'Playwright agents mode: use playwright-test-planner, playwright-test-generator and playwright-test-healer as described in your instructions.'].filter(Boolean).join(' ') : notes, kind });
+  const meta = { id, target, kind, mode, notes, playwrightAgents: pw, settings, cwd, prompt, startedAt: new Date().toISOString(), cancelled: false };
   fs.writeFileSync(path.join(dir, 'run.json'), JSON.stringify(meta, null, 2));
 
   const out = fs.openSync(path.join(dir, 'stream.jsonl'), 'a');
@@ -145,13 +147,21 @@ function startRun({ target, mode = 'full', notes = '', model, effort, maxBudgetU
     '--agent', 'qa-lead', '-p', prompt,
     '--output-format', 'stream-json', '--verbose',
     '--permission-mode', PERMISSION_MODE,
-    '--allowedTools', ALLOWED_TOOLS,
+    '--allowedTools', pw ? `${ALLOWED_TOOLS},mcp__playwright-test` : ALLOWED_TOOLS,
   ];
+  if (pw) {
+    // The MCP server starts with the session, so qa/ must exist first (see scripts/prepare-qa.mjs).
+    const mcp = { mcpServers: { 'playwright-test': { command: 'sh', args: ['-c', 'cd qa && exec npx playwright run-test-mcp-server --headless'], env: kind === 'site' ? { BASE_URL: target } : {} } } };
+    const mcpFile = path.join(dir, 'mcp.json');
+    fs.writeFileSync(mcpFile, JSON.stringify(mcp, null, 2));
+    args.push('--mcp-config', mcpFile);
+  }
   if (settings.model) args.push('--model', settings.model);
   if (settings.effort) args.push('--effort', settings.effort);
   if (settings.maxBudgetUsd) args.push('--max-budget-usd', String(settings.maxBudgetUsd));
   // The wrapper records the exit code so status survives a server restart.
-  const child = spawn('/bin/sh', ['-c', '"$@"; echo $? > "$QA_UI_EXIT_FILE"', 'sh', CLAUDE_BIN, ...args], {
+  const prep = pw ? `node "${path.join(HOME, '.claude/qa-prepare.mjs')}" "${cwd}" || { echo $? > "$QA_UI_EXIT_FILE"; exit 1; }; ` : '';
+  const child = spawn('/bin/sh', ['-c', prep + '"$@"; echo $? > "$QA_UI_EXIT_FILE"', 'sh', CLAUDE_BIN, ...args], {
     cwd,
     detached: true,
     stdio: ['ignore', out, err],
@@ -423,6 +433,7 @@ const TOOLS = [
         model: { type: 'string', description: 'Optional model for the whole team (sub-agents inherit it): opus, sonnet, haiku, fable, or a full id such as claude-sonnet-5-5. Defaults to sonnet; pass "default" for Claude\'s own default.' },
         effort: { type: 'string', enum: [...EFFORTS, 'default'], description: 'Optional reasoning effort. Defaults to low; higher is slower and costs more. "default" uses Claude\'s own default.' },
         maxBudgetUsd: { type: 'number', description: 'Optional spending cap in US dollars. The run stops when it is reached.' },
+        playwrightAgents: { type: 'boolean', description: 'Use Playwright\'s planner, generator and healer agents inside the run (slower and costs more; needs ./install.sh --force). Default false.' },
         notes: { type: 'string', description: 'Extra instructions, e.g. "It runs at http://localhost:3000, start it with npm run dev" or test login details (never a real password).' },
       },
       required: ['target'],
