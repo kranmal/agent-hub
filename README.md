@@ -19,7 +19,20 @@ git clone https://github.com/kranmal/agent-hub.git && cd agent-hub
 node server.mjs                           # http://127.0.0.1:4750
 ```
 
-The hub starts the two team dashboards for you. Full plain-English walkthrough with diagrams: [docs/Agent-Hub-User-Guide.docx](docs/Agent-Hub-User-Guide.docx).
+The hub starts the two team dashboards for you. Each team can also run on its own: see the README inside `qa-agent-team/` and `perf-agent-team/`. Full plain-English walkthrough with diagrams: [docs/Agent-Hub-User-Guide.docx](docs/Agent-Hub-User-Guide.docx).
+
+## What is in the repo
+
+```
+agent-hub/
+  server.mjs, index.html     the hub (port 4750)
+  PrettyCSV.html             CSV viewer
+  qa-agent-team/             QA agents, dashboard (4747), MCP server
+  perf-agent-team/           Perf agents, k6 skill, dashboard (4748), MCP server
+  docs/                      user guide, diagrams and the scripts that build them
+```
+
+The QA and Performance teams used to live in their own repos (`kranmal/qa-agent-team`, `kranmal/perf-agent-team`). Those are now archived and read-only; this repo is the maintained home for all of it. Their commit history was not carried over, only the files. The old Word guides for the two teams were left out.
 
 ## Settings
 
@@ -45,6 +58,7 @@ Listens on 127.0.0.1 only, rejects other Host/Origin headers and requires a cust
 | `docs/Agent-Hub-User-Guide.docx` | Merged user guide (rebuild: `node docs/build-guide.js`, needs the `docx` npm package) |
 | `docs/make-diagrams.py` | Draws the guide diagrams (needs Pillow) |
 | `docs/source-guides/` | The original PrettyCSV guide it was merged from |
+| `docs/img/` | Diagrams and screenshots used by the guide |
 
 ## Licence
 
