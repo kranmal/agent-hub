@@ -60,6 +60,14 @@ th{color:var(--mut);font-weight:500;font-size:12px}
 a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
 .mono{font-family:ui-monospace,Menlo,monospace;font-size:12px}
 .err{color:var(--bad)}
+#msg{min-height:20px;margin:6px 0 10px}
+#msg.info{color:var(--accent);display:flex;align-items:center;gap:8px}
+.spin{width:12px;height:12px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;display:inline-block;animation:sp .7s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+button:disabled{opacity:.65;cursor:progress}
+.starting{border:1px dashed var(--accent);background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;gap:10px}
+@keyframes nudge{20%,60%{transform:translateX(-4px)}40%,80%{transform:translateX(4px)}}
+.nudge{animation:nudge .35s;border-color:var(--bad)!important}
 iframe{width:100%;height:calc(100vh - 90px);border:1px solid var(--border);border-radius:12px;background:#fff}
 pre{white-space:pre-wrap;margin:0;font-size:12px;max-height:220px;overflow:auto}
 .hide{display:none}
@@ -149,7 +157,13 @@ const api = async (m, p, b) => {
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const NAMES = { perf: 'Perf team', qa: 'QA team' };
 let view = 'overview', state = { perf: [], qa: [], detail: { perf: null, qa: null }, chain: {}, costs: { perf: [], qa: [] } };
-const msg = (t) => { $('#msg').textContent = t || ''; };
+const msg = (t) => { const m = $('#msg'); m.className = 'small err'; m.textContent = t || ''; };
+const note = (t) => { const m = $('#msg'); m.className = 'small info'; m.innerHTML = `<span class="spin"></span><span>${esc(t)}</span>`; };
+const NAME_LONG = { perf: 'Perf strategy', qa: 'QA' };
+const MODE_LONG = { full: 'full run', update: 'update run', strategy: 'run' };
+let busy = null, fastUntil = 0;
+$('#target').addEventListener('input', () => $('#target').classList.remove('nudge'));
+const needTarget = () => { const i = $('#target'); msg('Enter a target first (a project folder, repo URL or website)'); i.focus(); i.classList.remove('nudge'); void i.offsetWidth; i.classList.add('nudge'); };
 
 function show(v) {
   view = v;
@@ -188,13 +202,24 @@ applyTheme(localStorage.getItem('hub.theme') || 'auto');
 let pwOn = false;
 async function start(team, mode) {
   msg('');
-  if (!target()) return msg('Enter a target first');
-  try { await api('POST', `/api/${team}/api/runs`, { target: target(), mode, ...opts(), ...(team === 'qa' ? { playwrightAgents: pwOn } : {}) }); await poll(); } catch (e) { msg(e.message); }
+  if (!target()) return needTarget();
+  if (busy) return;
+  busy = { team, mode, target: target() };
+  note(`Starting ${NAME_LONG[team]} ${MODE_LONG[mode] || mode} on ${busy.target}. The lead agent is getting ready, this can take a few seconds.`);
+  show(team); render();
+  try { await api('POST', `/api/${team}/api/runs`, { target: busy.target, mode, ...opts(), ...(team === 'qa' ? { playwrightAgents: pwOn } : {}) }); fastUntil = Date.now() + 30000; msg(''); }
+  catch (e) { msg(e.message); }
+  busy = null; await poll();
 }
 $('#runall').onclick = async () => {
   msg('');
-  if (!target()) return msg('Enter a target first');
-  try { await api('POST', '/api/chain', { target: target(), ...opts() }); await poll(); } catch (e) { msg(e.message); }
+  if (!target()) return needTarget();
+  if (busy) return;
+  busy = { team: 'chain', target: target() };
+  $('#runall').disabled = true; $('#runall').textContent = 'Starting…';
+  note(`Starting Run all on ${busy.target}: Perf strategy first, then the full QA run.`);
+  try { await api('POST', '/api/chain', { target: busy.target, ...opts() }); fastUntil = Date.now() + 30000; msg(''); } catch (e) { msg(e.message); }
+  busy = null; $('#runall').disabled = false; $('#runall').textContent = 'Run all'; await poll();
 };
 $('#cancelchain').onclick = () => api('POST', '/api/chain/cancel').then(poll).catch((e) => msg(e.message));
 
@@ -205,7 +230,8 @@ function teamView(t) {
   const el = $('#v-' + t), r = state.detail[t];
   const runs = state[t];
   const modes = t === 'perf' ? [['strategy', 'Start strategy']] : [['full', 'Start full run'], ['update', 'Start update run']];
-  let h = `<div class="row" style="margin-bottom:12px">${modes.map(([m, l]) => `<button class="b pri" data-start="${m}">${l}</button>`).join('')}${t === 'qa' ? `<label class="small" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="pwagents"${pwOn ? ' checked' : ''}> Use Playwright agents (slower, costs more)</label>` : ''}</div>`;
+  let h = `<div class="row" style="margin-bottom:12px">${modes.map(([m, l]) => { const me = busy && busy.team === t && busy.mode === m; return `<button class="b pri" data-start="${m}"${busy ? ' disabled' : ''}>${me ? '<span class="spin"></span> Starting…' : l}</button>`; }).join('')}${t === 'qa' ? `<label class="small" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="pwagents"${pwOn ? ' checked' : ''}> Use Playwright agents (slower, costs more)</label>` : ''}</div>`;
+  if (busy && busy.team === t) h += `<div class="card starting" style="margin-bottom:12px"><span class="spin"></span><span>Starting ${NAME_LONG[t]} ${MODE_LONG[busy.mode] || busy.mode} on ${esc(busy.target)}…</span></div>`;
   if (r) {
     h += `<div class="card"><div class="row"><b>${esc(r.target)}</b><span class="pill ${cardState({ ...r, team: t })}">${r.status === 'succeeded' && t === 'perf' && r.mode === 'strategy' ? 'awaiting approval' : r.status}</span></div>
       <div class="mut small">${esc(r.mode)} · started ${new Date(r.startedAt).toLocaleString()} · cost ${usd(r.result && r.result.costUsd)}${r.result && r.result.durationMs ? ' · ' + dur(r.result.durationMs) : ''}</div>
@@ -323,7 +349,8 @@ async function poll() {
   render();
 }
 show(localStorage.getItem('hub.view') || 'overview');
-poll(); setInterval(poll, 4000);
+poll(); setInterval(() => { if (!busy) poll(); }, 4000);
+setInterval(() => { if (Date.now() < fastUntil && !busy) poll(); }, 1000);
 </script>
 </body>
 </html>
