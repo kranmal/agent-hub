@@ -44,7 +44,7 @@ d.text((60, 900), 'Everything runs on your own computer. Nothing is opened to th
 im.save(os.path.join(OUT, 'architecture.png'))
 
 # 2. setup journey
-steps = [('1', 'Check tools', 'Node, Git,\nClaude Code, k6'), ('2', 'Download', 'three projects\nside by side'),
+steps = [('1', 'Check tools', 'Node, Git,\nClaude Code, k6'), ('2', 'Download', 'one repo with\neverything in it'),
          ('3', 'Install agents', 'run install.sh\nin both teams'), ('4', 'Sign in', 'claude auth login'),
          ('5', 'Start the hub', 'node server.mjs'), ('6', 'Open it', 'localhost:4750')]
 im, d = canvas(1800, 420); title(d, 'Getting set up: six steps', 1800)
