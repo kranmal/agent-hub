@@ -41,6 +41,7 @@ button.b,select,input{font:inherit;color:var(--text);background:var(--surface);b
 button.b{cursor:pointer}
 button.b:hover{background:var(--surface2)}
 button.b.pri{background:var(--accent);color:#fff;border-color:var(--accent)}button.b.pri:hover{filter:brightness(1.08);background:var(--accent)}
+button.b.sm{padding:4px 10px;font-size:12px}
 button.b.full{width:100%;margin-top:10px}
 input[type=text]{min-width:260px}
 .bar{height:6px;border-radius:3px;background:var(--surface2);overflow:hidden;margin-top:10px}
@@ -50,7 +51,7 @@ h4{margin:14px 0 4px;font-size:12px;font-weight:600;letter-spacing:.06em;text-tr
 .rgroup:first-child h4{margin-top:6px}
 .rgroup table{table-layout:fixed}
 .rgroup td:nth-child(2){width:72px}
-.rgroup td:nth-child(3){width:150px;white-space:nowrap}
+.rgroup td:nth-child(3){width:170px;text-align:right;white-space:nowrap}
 .rgroup td:first-child{overflow-wrap:anywhere}
 td,th{text-align:left;padding:7px 8px;border-bottom:1px solid var(--border);font-size:13px}
 th{color:var(--mut);font-weight:500;font-size:12px}
@@ -60,7 +61,7 @@ a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
 iframe{width:100%;height:calc(100vh - 90px);border:1px solid var(--border);border-radius:12px;background:#fff}
 pre{white-space:pre-wrap;margin:0;font-size:12px;max-height:220px;overflow:auto}
 .hide{display:none}
-@media(max-width:760px){.app{grid-template-columns:1fr}nav{position:static;height:auto;flex-direction:row;overflow:auto;border-right:0;border-bottom:1px solid var(--border);padding:8px}nav h1,nav .sp,nav .svc,nav .grp{display:none}nav button{white-space:nowrap}main{padding:16px}}
+@media(max-width:760px){.app{grid-template-columns:1fr}nav{position:static;height:auto;align-items:center;flex-direction:row;overflow:auto;border-right:0;border-bottom:1px solid var(--border);padding:8px}nav h1,nav .sp,nav .svc,nav .grp{display:none}nav button{white-space:nowrap}main{padding:16px}}
 </style>
 </head>
 <body>
@@ -223,8 +224,14 @@ function teamView(t) {
   if (ap) ap.onclick = () => { if (confirm('Phase 2 builds k6 scripts and runs load tests against ' + r.target + '. Continue?')) start('perf', 'run'); };
 }
 const runTable = (runs, t) => `<table>${runs.map((x) => `<tr><td><a href="#" data-pick="${x.id}">${esc(x.id)}</a></td><td>${esc(x.target)}</td><td>${esc(x.mode)}</td><td><span class="pill ${x.status}">${x.status}</span></td></tr>`).join('') || '<tr><td class="mut">None</td></tr>'}</table>`;
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-open],[data-dl]');
+  if (!b) return;
+  if (b.dataset.open) window.open(b.dataset.open, '_blank', 'noopener');
+  else location.href = b.dataset.dl;
+});
 const REPORT_TYPES = [['.pdf', 'PDF'], ['.json', 'JSON'], ['.csv', 'CSV'], ['.md', 'Markdown']];
-const reportRow = (t, id, f) => { const q = encodeURIComponent(f.path); return `<tr><td>${esc(f.path)}</td><td class="mut">${Math.round(f.bytes / 1024)} KB</td><td><a href="/api/${t}/api/runs/${id}/file?path=${q}" target="_blank">Open</a> · <a href="/api/${t}/api/runs/${id}/file?path=${q}&download=1">Download</a></td></tr>`; };
+const reportRow = (t, id, f) => { const q = encodeURIComponent(f.path); return `<tr><td>${esc(f.path)}</td><td class="mut">${Math.round(f.bytes / 1024)} KB</td><td><button class="b sm" data-open="/api/${t}/api/runs/${id}/file?path=${q}">Open</button> <button class="b sm" data-dl="/api/${t}/api/runs/${id}/file?path=${q}&download=1">Download</button></td></tr>`; };
 const reportList = (t, id, reps) => {
   if (!reps || !reps.length) return '<div class="mut small">None yet</div>';
   const ext = (f) => (f.path.match(/\.[^./]+$/) || [''])[0].toLowerCase();
