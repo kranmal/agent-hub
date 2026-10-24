@@ -1,6 +1,6 @@
 # Agent Hub
 
-One local web page for the [Performance Agent Team](https://github.com/kranmal/perf-agent-team), the [QA Agent Team](https://github.com/kranmal/qa-agent-team) and Pretty CSV.
+One repo with everything: a local web page (the hub) plus the Performance Agent Team, the QA Agent Team and Pretty CSV.
 
 - Start Perf and QA runs, with a model and effort picker (default: Sonnet, low)
 - **Run all**: Perf strategy, then the full QA run, in order
@@ -13,13 +13,10 @@ No dependencies. Needs Node.js 18+ and a signed-in Claude Code CLI (`claude auth
 ## Run it
 
 ```bash
-mkdir agent-tools && cd agent-tools
-git clone https://github.com/kranmal/agent-hub.git
-git clone https://github.com/kranmal/qa-agent-team.git
-git clone https://github.com/kranmal/perf-agent-team.git
+git clone https://github.com/kranmal/agent-hub.git && cd agent-hub
 (cd qa-agent-team && ./install.sh)
 (cd perf-agent-team && ./install.sh)      # also: brew install k6
-cd agent-hub && node server.mjs           # http://127.0.0.1:4750
+node server.mjs                           # http://127.0.0.1:4750
 ```
 
 The hub starts the two team dashboards for you. Full plain-English walkthrough with diagrams: [docs/Agent-Hub-User-Guide.docx](docs/Agent-Hub-User-Guide.docx).
@@ -29,8 +26,8 @@ The hub starts the two team dashboards for you. Full plain-English walkthrough w
 | Variable | Default |
 |---|---|
 | `HUB_PORT` | `4750` |
-| `HUB_QA_DIR` | `../qa-agent-team` |
-| `HUB_PERF_DIR` | `../perf-agent-team` |
+| `HUB_QA_DIR` | `./qa-agent-team` |
+| `HUB_PERF_DIR` | `./perf-agent-team` |
 | `QA_UI_PORT` / `PERF_UI_PORT` | `4747` / `4748` |
 
 ## Safety
@@ -43,10 +40,12 @@ Listens on 127.0.0.1 only, rejects other Host/Origin headers and requires a cust
 |---|---|
 | `server.mjs`, `index.html` | The hub |
 | `PrettyCSV.html` | CSV viewer, served at `/csv` |
+| `qa-agent-team/` | The QA agent team: agents, skill, dashboard and MCP server (see its README) |
+| `perf-agent-team/` | The Performance agent team: agents, k6 skill, dashboard and MCP server (see its README) |
 | `docs/Agent-Hub-User-Guide.docx` | Merged user guide (rebuild: `node docs/build-guide.js`, needs the `docx` npm package) |
 | `docs/make-diagrams.py` | Draws the guide diagrams (needs Pillow) |
-| `docs/source-guides/` | The original PrettyCSV and QA guides it was merged from |
+| `docs/source-guides/` | The original PrettyCSV guide it was merged from |
 
 ## Licence
 
-MIT, see [LICENSE](LICENSE).
+MIT, see [LICENSE](LICENSE). Copyright (c) 2026 Ketan Ranmal and Claude.

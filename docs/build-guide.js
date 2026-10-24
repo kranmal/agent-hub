@@ -99,14 +99,14 @@ c.push(spacer());
 c.push(...see('A version number after each command. The exact numbers will differ.'));
 
 c.push(h2('Step 2. Download the three projects'));
-c.push(p('The hub is the front door. The Performance and QA teams are separate projects it talks to. Download all three into the same folder, side by side.'));
-c.push(...code(['mkdir agent-tools && cd agent-tools', 'git clone https://github.com/kranmal/agent-hub.git', 'git clone https://github.com/kranmal/qa-agent-team.git', 'git clone https://github.com/kranmal/perf-agent-team.git']));
-c.push(...see('Three folders next to each other: agent-hub, qa-agent-team and perf-agent-team.'));
-c.push(...tip('Keep them where they are. The hub looks for the other two folders next to itself. If you keep them elsewhere, see the settings in Part 7.'));
+c.push(p('Everything is in one repository: the hub, the Performance team, the QA team and Pretty CSV.'));
+c.push(...code(['git clone https://github.com/kranmal/agent-hub.git', 'cd agent-hub']));
+c.push(...see('A folder called agent-hub that contains qa-agent-team and perf-agent-team.'));
+c.push(...tip('Keep the folder where it is. The hub finds the two teams inside it. If you keep copies elsewhere, see the settings in Part 7.'));
 
 c.push(h2('Step 3. Install the helpers'));
 c.push(p('Each team is a group of helpers. This copies them to where Claude Code can find them. You only do this once.'));
-c.push(...code(['cd qa-agent-team && ./install.sh && cd ..', 'cd perf-agent-team && ./install.sh && cd ..']));
+c.push(...code(['(cd qa-agent-team && ./install.sh)', '(cd perf-agent-team && ./install.sh)']));
 c.push(...see('Lines starting with "Installed:" and then "Done." for each team.'));
 c.push(...fix('If you see "Exists, skipping", the helpers are already there, which is fine. If you see "Permission denied", type `chmod +x install.sh` and try again.'));
 
@@ -117,7 +117,7 @@ c.push(p('Your browser opens. Sign in with your Claude account and approve the r
 c.push(...see('The words "Login successful". To check later, type `claude auth status`.'));
 
 c.push(h2('Step 5. Start the Agent Hub'));
-c.push(...code(['cd agent-hub', 'node server.mjs']));
+c.push(...code(['node server.mjs']));
 c.push(...see('A line saying the hub is listening on http://127.0.0.1:4750. Leave this window open while you use the hub.'));
 c.push(p('The hub starts the Performance and QA dashboards for you in the background if they are not already running.'));
 
@@ -330,7 +330,7 @@ c.push(bullet('**Never give real passwords.** If your site needs a login, use a 
 c.push(bullet('**Phase 2 always needs your approval.** Run all stops after the Performance strategy.'));
 c.push(h2('Where things are kept'));
 c.push(table(['Where', 'What is there'], [
-  ['Your agent-tools folder', 'The three projects you downloaded.'],
+  ['Your agent-hub folder', 'The hub, both teams and Pretty CSV.'],
   ['`~/.claude/agents/`', 'The helpers copied there by install.sh.'],
   ['`~/.qa-agent-team-ui/`', 'A record of every QA run and the folders for each website tested, including its reports.'],
   ['`~/.perf-agent-team-ui/`', 'The same for Performance runs.'],
@@ -354,8 +354,8 @@ c.push(spacer());
 c.push(h2('Settings you can change'));
 c.push(table(['Setting', 'Default', 'What it does'], [
   ['`HUB_PORT`', '4750', 'Port for the Agent Hub.'],
-  ['`HUB_QA_DIR`', '../qa-agent-team', 'Where the QA team project is.'],
-  ['`HUB_PERF_DIR`', '../perf-agent-team', 'Where the Performance team project is.'],
+  ['`HUB_QA_DIR`', './qa-agent-team', 'Where the QA team project is.'],
+  ['`HUB_PERF_DIR`', './perf-agent-team', 'Where the Performance team project is.'],
   ['`QA_UI_PORT`', '4747', 'Port for the QA dashboard.'],
   ['`PERF_UI_PORT`', '4748', 'Port for the Performance dashboard.'],
 ], [2800, 2800, 3760]));

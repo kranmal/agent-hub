@@ -10,14 +10,14 @@ import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-// Team repos are looked up next to this folder (git clone them beside agent-hub),
-// or set HUB_QA_DIR / HUB_PERF_DIR.
+// The team projects live in qa-agent-team/ and perf-agent-team/ inside this repo.
+// Set HUB_QA_DIR / HUB_PERF_DIR to use copies elsewhere.
 const find = (envDir, ...cands) => {
   const dirs = [envDir, ...cands].filter(Boolean).map((d) => path.resolve(HERE, d));
   return dirs.find((d) => fs.existsSync(path.join(d, 'interface/server.mjs'))) || dirs[0];
 };
-const QA_DIR = find(process.env.HUB_QA_DIR, '../qa-agent-team', '../repos/qa-agent-team');
-const PERF_DIR = find(process.env.HUB_PERF_DIR, '../perf-agent-team');
+const QA_DIR = find(process.env.HUB_QA_DIR, './qa-agent-team', '../qa-agent-team');
+const PERF_DIR = find(process.env.HUB_PERF_DIR, './perf-agent-team', '../perf-agent-team');
 const PORT = Number(process.env.HUB_PORT || 4750);
 
 const TEAMS = {
