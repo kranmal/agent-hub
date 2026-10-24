@@ -8,6 +8,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 
 const project = path.resolve(process.argv[2] || process.cwd());
+const target = process.argv[3] || '';
 const qa = path.join(project, 'qa');
 const scaffold = path.join(os.homedir(), '.claude/skills/qa-playwright/assets/scaffold/qa');
 const run = (cmd, args, cwd) => execFileSync(cmd, args, { cwd, stdio: 'inherit' });
@@ -20,11 +21,13 @@ if (!fs.existsSync(path.join(qa, 'playwright.config.ts'))) {
 if (!fs.existsSync(path.join(qa, 'node_modules/@playwright/test'))) run('npm', ['install', '--no-audit', '--no-fund'], qa);
 run('npx', ['playwright', 'install', 'chromium'], qa);
 
-// Seed test for the planner and generator (they run it to get a ready page). Kept outside the e2e/api/a11y projects.
-const seed = path.join(qa, 'tests/seed.spec.ts');
+// Seed test for the planner and generator (they run it to get a ready page). It lives in tests/e2e so the
+// "e2e" project matches it, and opens the full base URL (a bare "/" has no base when the MCP server ignores BASE_URL).
+const seed = path.join(qa, 'tests/e2e/seed.spec.ts');
 if (!fs.existsSync(seed)) {
   fs.mkdirSync(path.dirname(seed), { recursive: true });
-  fs.writeFileSync(seed, "import { test } from '@playwright/test';\n\ntest.describe('Seed', () => {\n  test('seed', async ({ page }) => {\n    await page.goto('/');\n  });\n});\n");
+  const url = JSON.stringify(target);
+  fs.writeFileSync(seed, `import { test } from '@playwright/test';\n\ntest.describe('Seed', () => {\n  test('seed', async ({ page, baseURL }) => {\n    await page.goto(process.env.BASE_URL || ${url} || baseURL || '/');\n  });\n});\n`);
 }
 fs.mkdirSync(path.join(qa, 'specs'), { recursive: true });
 console.log('Ready:', qa);

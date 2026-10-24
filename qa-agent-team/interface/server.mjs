@@ -160,7 +160,7 @@ function startRun({ target, mode = 'full', notes = '', model, effort, maxBudgetU
   if (settings.effort) args.push('--effort', settings.effort);
   if (settings.maxBudgetUsd) args.push('--max-budget-usd', String(settings.maxBudgetUsd));
   // The wrapper records the exit code so status survives a server restart.
-  const prep = pw ? `node "${path.join(HOME, '.claude/qa-prepare.mjs')}" "${cwd}" || { echo $? > "$QA_UI_EXIT_FILE"; exit 1; }; ` : '';
+  const prep = pw ? `node "${path.join(HOME, '.claude/qa-prepare.mjs')}" "${cwd}" "${kind === 'site' ? target : ''}" || { echo $? > "$QA_UI_EXIT_FILE"; exit 1; }; ` : '';
   const child = spawn('/bin/sh', ['-c', prep + '"$@"; echo $? > "$QA_UI_EXIT_FILE"', 'sh', CLAUDE_BIN, ...args], {
     cwd,
     detached: true,
