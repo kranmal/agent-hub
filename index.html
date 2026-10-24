@@ -105,6 +105,8 @@ pre{white-space:pre-wrap;margin:0;font-size:12px;max-height:220px;overflow:auto}
         <option value="low">Low effort</option><option value="medium">Medium</option><option value="high">High</option><option value="xhigh">Extra high</option><option value="max">Max</option><option value="default">Default</option>
       </select>
       <button class="b" id="theme" title="Toggle theme" aria-label="Toggle theme">Theme: auto</button>
+      <button class="b" id="stopall" title="Stop every running run in both teams">Stop all</button>
+      <button class="b" id="reset" title="Stop all runs and clear the Run all chain. Run history and reports are kept.">Reset</button>
       <button class="b pri" id="runall">Run all</button>
     </div>
   </div>
@@ -220,6 +222,8 @@ $('#runall').onclick = async () => {
   try { await api('POST', '/api/chain', { target: busy.target, ...opts() }); fastUntil = Date.now() + 30000; msg(''); } catch (e) { msg(e.message); }
   busy = null; $('#runall').disabled = false; $('#runall').textContent = 'Run all'; await poll();
 };
+$('#stopall').onclick = () => { if (confirm('Stop every running run?')) api('POST', '/api/stop-all').then(poll).catch((e) => msg(e.message)); };
+$('#reset').onclick = () => { if (confirm('Reset? This stops all runs and clears the Run all chain. Run history and reports are kept.')) api('POST', '/api/reset').then(poll).catch((e) => msg(e.message)); };
 $('#cancelchain').onclick = () => api('POST', '/api/chain/cancel').then(poll).catch((e) => msg(e.message));
 
 const latest = (t) => state[t][0];

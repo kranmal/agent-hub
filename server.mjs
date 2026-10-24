@@ -62,6 +62,23 @@ const chain = { state: 'idle', steps: [], error: null, cancelled: false };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const DONE = new Set(['succeeded', 'failed', 'cancelled', 'interrupted']);
 
+// Stop every running run in both teams and the Run all chain. Reset also clears the
+// chain state. Run history and reports on disk are kept. Teams that are not up are skipped.
+async function stopEverything() {
+  chain.cancelled = true;
+  const stopped = [];
+  for (const name of Object.keys(TEAMS)) {
+    if (!(await isUp(name))) continue;
+    let runs = [];
+    try { runs = await team(name, 'GET', '/api/runs'); } catch { continue; }
+    for (const r of runs.filter((x) => x.status === 'running')) {
+      await team(name, 'POST', `/api/runs/${r.id}/cancel`).catch(() => {});
+      stopped.push(`${name}:${r.id}`);
+    }
+  }
+  return stopped;
+}
+
 async function runChain({ target, model, effort }) {
   Object.assign(chain, { state: 'running', error: null, cancelled: false, steps: [
     { team: 'perf', label: 'Perf strategy', status: 'pending', runId: null },
@@ -208,6 +225,12 @@ async function handle(req, res) {
       let b; try { b = await readBody(req); } catch (e) { return json(res, 400, { error: e.message }); }
       if (!b.target) return json(res, 400, { error: 'target is required' });
       try { return json(res, 200, await estimate(b)); } catch (e) { return json(res, 422, { error: e.message }); }
+    }
+    if (p === '/api/stop-all') return json(res, 200, { stopped: await stopEverything() });
+    if (p === '/api/reset') {
+      const stopped = await stopEverything();
+      Object.assign(chain, { state: 'idle', steps: [], error: null, cancelled: false });
+      return json(res, 200, { stopped, reset: true });
     }
     if (p === '/api/chain/cancel') {
       chain.cancelled = true;
