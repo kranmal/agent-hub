@@ -1,0 +1,761 @@
+<!doctype html>
+<html lang="en" data-mode="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PrettyCSV</title>
+<style id="mainCss">
+:root{--bg:#f3f3f1;--bg2:#e9e9e6;--panel:rgba(255,255,255,.78);--text:#1d1d1d;--muted:#585858;--line:rgba(0,0,0,.14);--surface:#fcfcfb;--ctl:rgba(0,0,0,.055);--accent:#2e2e2e;--hbg:#2e2e2e;--on-accent:#fff;color-scheme:light}
+[data-mode=dark]{--bg:#151515;--bg2:#1c1c1c;--panel:rgba(34,34,34,.78);--text:#e8e8e5;--muted:#a3a3a0;--line:rgba(255,255,255,.14);--surface:#1f1f1f;--ctl:rgba(255,255,255,.07);--on-accent:#151515;color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;color:var(--text);font:14px/1.45 -apple-system,BlinkMacSystemFont,"SF Pro Text","Inter","Segoe UI",system-ui,sans-serif;-webkit-font-smoothing:antialiased;background:linear-gradient(var(--bg),var(--bg2));background-attachment:fixed}
+.app{display:grid;grid-template-columns:330px 1fr;height:100vh}
+.side{background:var(--panel);backdrop-filter:saturate(180%) blur(22px);-webkit-backdrop-filter:saturate(180%) blur(22px);border-right:1px solid var(--line);overflow:auto;padding:16px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:17px;margin-bottom:14px}
+.brand i{width:30px;height:30px;border-radius:9px;background:var(--accent);display:grid;place-items:center;color:var(--on-accent);font-style:normal;font-size:15px}
+.sec{border-top:1px solid var(--line);padding:4px 0}
+.sec>summary{cursor:pointer;font-weight:600;padding:10px 0;list-style:none;display:flex;justify-content:space-between}
+.sec>summary::after{content:"▾";color:var(--muted)}
+.sec:not([open])>summary::after{content:"▸"}
+.sec>summary::-webkit-details-marker{display:none}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:8px 0}
+.row>label{color:var(--muted);font-size:13px;flex:none}
+.checks{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;margin:6px 0}
+.checks label{display:flex;gap:7px;align-items:center;font-size:13px;cursor:pointer}
+input[type=checkbox]{accent-color:var(--accent)}
+input[type=range]{accent-color:var(--accent);width:150px}
+select,input[type=text],textarea{background:var(--ctl);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font:inherit;font-size:13px;max-width:100%}
+textarea{width:100%;height:70px;resize:vertical;font-family:ui-monospace,monospace;font-size:12px}
+input[type=text]{width:100%}
+.btn{background:var(--ctl);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:7px 12px;font:inherit;font-size:13px;cursor:pointer}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.btns{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+.seg{display:inline-flex;background:var(--ctl);border-radius:8px;padding:2px;border:1px solid var(--line)}
+.seg button{border:0;background:none;color:var(--muted);padding:4px 10px;border-radius:6px;font:inherit;font-size:12.5px;cursor:pointer}
+.seg button.on{background:var(--panel);color:var(--text);box-shadow:0 1px 2px #0003;font-weight:600}
+.swatches{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 10px}
+.swatches button{width:26px;height:26px;border-radius:50%;border:2px solid transparent;cursor:pointer;outline:2px solid transparent}
+.swatches button.on{outline-color:var(--text);outline-offset:2px}
+.colitem{border:1px solid var(--line);border-radius:10px;margin:6px 0;background:var(--ctl)}
+.colhead{display:flex;align-items:center;gap:8px;padding:7px 9px;cursor:pointer}
+.colhead .nm{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
+.chip{font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);border:1px solid var(--line);border-radius:5px;padding:0 5px}
+.colbody{display:none;padding:2px 9px 9px}
+.colitem.open .colbody{display:block}
+.colitem.hidden .nm{opacity:.45;text-decoration:line-through}
+main{display:flex;flex-direction:column;min-width:0;height:100vh;padding:16px 20px;gap:12px}
+.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.toolbar input[type=text]{width:260px}
+.toolbar .sp{flex:1}
+.muted{color:var(--muted);font-size:13px}
+.stage{flex:1;min-height:0;overflow:auto}
+.empty-state{border:2px dashed var(--line);border-radius:18px;height:100%;min-height:320px;display:grid;place-content:center;text-align:center;gap:10px;color:var(--muted)}
+.empty-state h2{margin:0;color:var(--text);font-size:22px}
+body.drag .empty-state,body.drag .stage{outline:3px dashed var(--accent);outline-offset:-6px}
+.pager{display:flex;gap:10px;align-items:center;justify-content:center}
+.zt{border:1px solid var(--tline);border-radius:14px;margin:0 0 16px;overflow:hidden;background:var(--surface)}
+.tw.shadow .zt{box-shadow:0 6px 20px -10px #0004}
+.zt-h{display:flex;align-items:center;gap:12px;padding:12px 16px;background:color-mix(in srgb,var(--accent) 10%,var(--surface));border-bottom:1px solid var(--tline);flex-wrap:wrap}
+.zkey{background:var(--accent);color:var(--on-accent);font-weight:700;font-size:.8em;padding:2px 9px;border-radius:6px;letter-spacing:.03em}
+.zname{font-weight:700;font-size:1.1em;flex:1;min-width:200px}
+.zst,.zp{font-size:.8em;font-weight:600;border-radius:99px;padding:2px 11px;background:#e5e7eb;color:#374151}
+.zst.ok{background:#d1fae5;color:#065f46}.zst.bad{background:#fee2e2;color:#991b1b}
+.zp::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:#3b82f6}
+.zp.high::before{background:#ef4444}.zp.low::before{background:#9ca3af}
+[data-mode=dark] .zst{background:#2d3340;color:#d1d5db}[data-mode=dark] .zst.ok{background:#064e3b;color:#a7f3d0}[data-mode=dark] .zst.bad{background:#7f1d1d;color:#fecaca}
+[data-mode=dark] .zp{background:#2d3340;color:#d1d5db}
+.zmeta{display:flex;gap:6px 28px;flex-wrap:wrap;padding:12px 16px 4px;font-size:.92em}
+.zmeta b,.zblock b{display:block;font-size:.72em;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:2px}
+.zchip{display:inline-block;border:1px solid var(--tline);border-radius:6px;padding:0 8px;margin-right:4px;font-size:.88em}
+.zblock{padding:6px 16px;white-space:pre-wrap}
+.zsteps{width:100%;border-collapse:collapse;margin-top:8px}
+.zsteps th{text-align:left;font-size:.75em;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);padding:8px 16px;border-top:1px solid var(--tline);border-bottom:1px solid var(--tline);background:color-mix(in srgb,var(--text) 4%,var(--surface))}
+.zsteps td{padding:var(--py) 16px;vertical-align:top;border-bottom:1px solid var(--tline);white-space:pre-wrap}
+.zsteps tr:last-child td{border-bottom:0}
+.zsteps .n{width:44px;color:var(--muted);font-weight:700}
+.zsteps td:nth-child(3){font-family:ui-monospace,Menlo,monospace;font-size:.9em}
+.zsteps td:nth-child(3):empty::before,.zsteps td:nth-child(4):empty::before{content:"—";opacity:.4}
+.zn{padding:8px 16px 14px;color:var(--muted);font-size:.9em}
+.modal{position:fixed;inset:0;background:#0007;display:grid;place-items:center;z-index:20;padding:16px}
+.mbox{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px;width:min(560px,100%);max-height:90vh;overflow:auto}
+.mbox .row select{width:230px}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#111;color:#fff;padding:9px 16px;border-radius:10px;opacity:0;transition:.25s;pointer-events:none;z-index:9}
+.toast.show{opacity:1}
+
+/* ---- the formatted sheet (also exported) ---- */
+.tw{--fs:14px;--py:8px;--px:14px;--ff:system-ui,-apple-system,"Segoe UI",sans-serif;--zebra:color-mix(in srgb,var(--accent) 6%,var(--surface));--tline:color-mix(in srgb,var(--text) 11%,transparent);font-family:var(--ff);font-size:var(--fs);color:var(--text);background:var(--surface);padding:22px;border-radius:16px}
+.doc-head{margin-bottom:14px}
+.doc-head h2{margin:0;font-size:1.6em;letter-spacing:-.01em}
+.doc-head p{margin:2px 0 0;color:var(--muted);font-size:.9em}
+.tblwrap{overflow:auto;max-height:calc(100vh - 250px);border:1px solid var(--tline)}
+.tw.rounded .tblwrap{border-radius:12px}
+.tw.shadow .tblwrap{box-shadow:0 8px 28px -10px #0004}
+.tbl{border-collapse:separate;border-spacing:0;min-width:100%;width:max-content}
+.tbl th,.tbl td{padding:var(--py) var(--px);background:var(--surface);text-align:left}
+.tbl td{max-width:380px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums}
+.tw.wrap .tbl td{white-space:normal;overflow:visible}
+.tbl th{font-weight:600;white-space:nowrap;cursor:pointer;user-select:none;background:var(--hbg);color:#fff;font-size:.88em}
+.tw.hs-tint .tbl th{background:color-mix(in srgb,var(--accent) 15%,var(--surface));color:var(--text)}
+.tw.hs-line .tbl th{background:var(--surface);color:var(--accent);border-bottom:2px solid var(--accent)}
+.tw.hc-upper .tbl th{text-transform:uppercase;letter-spacing:.06em;font-size:.78em}
+.tw.hc-cap .tbl th{text-transform:capitalize}
+.tw.sticky .tbl thead th{position:sticky;top:0;z-index:3}
+.tbl th .si{margin-left:6px;opacity:.85;font-size:.8em}
+.tw.lines-rows .tbl td,.tw.lines-grid .tbl td{border-bottom:1px solid var(--tline)}
+.tw.lines-grid .tbl td,.tw.lines-grid .tbl th{border-right:1px solid var(--tline)}
+.tw.lines-grid .tbl td:last-child,.tw.lines-grid .tbl th:last-child{border-right:0}
+.tw.zebra .tbl tbody tr:nth-child(even) td{background:var(--zebra)}
+.tw.hover .tbl tbody tr:hover td{background:color-mix(in srgb,var(--accent) 13%,var(--surface))}
+.tbl td.empty{color:var(--muted);opacity:.5}
+.tbl td.neg{color:#dc2626}
+[data-mode=dark] .tbl td.neg{color:#f87171}
+.tbl td.rn,.tbl th.rn{width:48px;min-width:48px;text-align:center!important;color:var(--muted);font-size:.85em}
+.tbl th.rn{color:inherit;opacity:.7;cursor:default}
+.tw.freeze .tbl .fz,.tw.freeze .tbl .rn{position:sticky;left:0;z-index:2}
+.tw.freeze .tbl.hasrn .fz{left:48px}
+.tw.freeze .tbl thead .fz,.tw.freeze .tbl thead .rn{z-index:4}
+.tbl tfoot td{font-weight:700;border-top:2px solid var(--accent);position:sticky;bottom:0;background:var(--surface)}
+.tbl a{color:var(--accent);text-decoration:none}.tbl a:hover{text-decoration:underline}
+.tbl mark{background:#fde047;color:#111;border-radius:3px;padding:0 1px}
+.badge{display:inline-block;padding:1px 10px;border-radius:99px;font-size:.88em;font-weight:600;background:hsl(var(--h) 75% 91%);color:hsl(var(--h) 65% 28%)}
+[data-mode=dark] .badge{background:hsl(var(--h) 45% 24%);color:hsl(var(--h) 85% 82%)}
+
+@media (max-width:820px){.app{grid-template-columns:1fr;height:auto}.side{max-height:50vh}main{height:auto;min-height:100vh}}
+@media print{.side,.toolbar,.pager,.toast{display:none!important}.app{display:block;height:auto}main{height:auto;padding:0}.stage{overflow:visible}.tblwrap{max-height:none!important;overflow:visible}body{background:#fff}}
+[data-theme=mono] .badge{filter:grayscale(1)}[data-theme=mono] .tbl td.neg{color:inherit;font-weight:700}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="side">
+  <div class="brand"><i>▦</i> PrettyCSV <button class="btn" id="modeBtn" style="margin-left:auto;padding:4px 10px" title="Toggle light / dark">🌙</button></div>
+
+  <details class="sec" open><summary>Data</summary>
+    <div class="btns">
+      <button class="btn primary" id="pick">Choose CSV…</button>
+      <button class="btn" id="sample">Try sample</button>
+      <input type="file" id="file" accept=".csv,.tsv,.txt,text/csv" hidden>
+    </div>
+    <textarea id="paste" placeholder="…or paste CSV text here"></textarea>
+    <div class="btns"><button class="btn" id="loadPaste">Load pasted text</button></div>
+    <div class="row"><label>Delimiter</label>
+      <select id="delim"><option value="auto">Auto-detect</option><option value=",">Comma ,</option><option value=";">Semicolon ;</option><option value="&#9;">Tab</option><option value="|">Pipe |</option></select></div>
+    <div class="checks"><label><input type="checkbox" id="hasHeader" checked> First row is header</label></div>
+  </details>
+
+  <details class="sec" open><summary>Look &amp; theme</summary>
+    <div class="swatches" id="swatches"></div>
+    <div class="row"><label>Mode</label><div class="seg" data-opt="mode"><button data-v="light">Light</button><button data-v="dark">Dark</button></div></div>
+    <div class="row"><label>Header style</label><div class="seg" data-opt="hs"><button data-v="solid">Solid</button><button data-v="tint">Tint</button><button data-v="line">Line</button></div></div>
+    <div class="row"><label>Header text</label><div class="seg" data-opt="hc"><button data-v="none">Normal</button><button data-v="upper">UPPER</button><button data-v="cap">Title</button></div></div>
+    <div class="row"><label>Font</label>
+      <select data-opt="font"><option value="sans">Clean sans</option><option value="serif">Serif</option><option value="mono">Monospace</option><option value="round">Rounded</option></select></div>
+    <div class="row"><label>Text size <span id="fsv"></span></label><input type="range" min="11" max="22" step="1" data-opt="fontSize"></div>
+    <div class="row"><label>Spacing</label><div class="seg" data-opt="density"><button data-v="compact">Compact</button><button data-v="cozy">Cozy</button><button data-v="roomy">Roomy</button></div></div>
+    <div class="row"><label>Lines</label><div class="seg" data-opt="lines"><button data-v="none">None</button><button data-v="rows">Rows</button><button data-v="grid">Grid</button></div></div>
+  </details>
+
+  <details class="sec" open><summary>Table options</summary>
+    <div class="checks">
+      <label><input type="checkbox" data-opt="zebra"> Zebra stripes</label>
+      <label><input type="checkbox" data-opt="hover"> Row hover</label>
+      <label><input type="checkbox" data-opt="wrap"> Wrap text</label>
+      <label><input type="checkbox" data-opt="rowNums"> Row numbers</label>
+      <label><input type="checkbox" data-opt="sticky"> Sticky header</label>
+      <label><input type="checkbox" data-opt="freeze"> Freeze 1st column</label>
+      <label><input type="checkbox" data-opt="rounded"> Rounded corners</label>
+      <label><input type="checkbox" data-opt="shadow"> Drop shadow</label>
+      <label><input type="checkbox" data-opt="negRed"> Negatives in red</label>
+      <label><input type="checkbox" data-opt="emptyDash"> Dash for blanks</label>
+      <label><input type="checkbox" data-opt="links"> Clickable links</label>
+      <label><input type="checkbox" data-opt="showMeta"> Row count caption</label>
+    </div>
+    <div class="row"><label>Totals row</label><div class="seg" data-opt="totals"><button data-v="none">None</button><button data-v="sum">Sum</button><button data-v="avg">Average</button></div></div>
+    <div class="row" style="display:block"><label>Table title</label><input type="text" data-opt="title" placeholder="Title (optional)"></div>
+  </details>
+
+  <details class="sec" open><summary>Columns <span class="muted" id="colHint"></span></summary>
+    <div id="cols"><p class="muted">Load a file to format its columns.</p></div>
+  </details>
+
+  <details class="sec" open><summary>Export</summary>
+    <div class="btns">
+      <button class="btn" id="expCopy">Copy as TSV</button>
+      <button class="btn" id="expCsv">Download CSV</button>
+      <button class="btn" id="expJson">JSON</button>
+      <button class="btn" id="expXlsx">Excel (.xlsx)</button>
+      <button class="btn" id="expZephyr">Zephyr Scale…</button>
+      <button class="btn" id="expHtml">Styled HTML</button>
+      <button class="btn" id="expPrint">Print / PDF</button>
+    </div>
+    <div class="btns"><button class="btn" id="reset">Reset formatting</button></div>
+  </details>
+</aside>
+
+<main>
+  <div class="toolbar" id="toolbar" hidden>
+    <div class="seg" id="viewSeg"><button data-v="table">Table</button><button data-v="zephyr">Zephyr Scale</button></div>
+    <input type="text" id="q" placeholder="Search rows…">
+    <span class="muted" id="count"></span>
+    <span class="sp"></span>
+    <button class="btn" id="clearSort" hidden>Clear sort</button>
+    <label class="muted">Rows per page <select id="pageSize"><option>25</option><option selected>100</option><option>500</option><option value="all">All</option></select></label>
+  </div>
+  <div class="stage" id="stage">
+    <div class="empty-state" id="empty">
+      <div style="font-size:48px">📄</div>
+      <h2>Drop a CSV file anywhere</h2>
+      <div>or choose one — everything stays in your browser.</div>
+      <div class="btns" style="justify-content:center"><button class="btn primary" id="pick2">Choose CSV…</button><button class="btn" id="sample2">Try sample data</button></div>
+    </div>
+    <div class="tw" id="sheet" hidden></div>
+  </div>
+  <div class="pager" id="pager" hidden></div>
+</main>
+</div>
+<div class="modal" id="zModal" hidden><div class="mbox">
+  <h3 style="margin:0 0 4px">Export for Zephyr Scale</h3>
+  <p class="muted" style="margin:0 0 12px">Map your columns to Zephyr Scale's CSV import fields. Rows sharing the same Name become steps of one test case.</p>
+  <div id="zMap"></div>
+  <div class="btns" style="justify-content:flex-end;margin-top:14px"><button class="btn" id="zCancel">Cancel</button><button class="btn" id="zGo">Download Zephyr CSV</button><button class="btn primary" id="zView">Show Zephyr Scale view</button></div>
+</div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const root=document.documentElement;
+
+const THEMES={mono:{a:'#2e2e2e',h:'#2e2e2e',hd:'#4a4a4a',d:'#e8e8e5'},ocean:{a:'#2563eb',h:'#1e3a8a'},forest:{a:'#059669',h:'#065f46'},sunset:{a:'#ea580c',h:'#9a3412'},grape:{a:'#7c3aed',h:'#4c1d95'},rose:{a:'#e11d48',h:'#881337'},slate:{a:'#475569',h:'#334155'}};
+const FONTS={sans:'system-ui,-apple-system,"Segoe UI",sans-serif',serif:'Georgia,"Times New Roman",serif',mono:'ui-monospace,SFMono-Regular,Menlo,monospace',round:'ui-rounded,"SF Pro Rounded","Nunito",system-ui,sans-serif'};
+const DENS={compact:[4,10],cozy:[8,14],roomy:[14,20]};
+const DEFAULTS={theme:'mono',mode:'light',hs:'solid',hc:'none',font:'sans',fontSize:14,density:'cozy',lines:'rows',zebra:true,hover:true,wrap:false,rowNums:false,sticky:true,freeze:false,rounded:true,shadow:true,negRed:true,emptyDash:true,links:true,showMeta:true,totals:'none',title:'',pageSize:'100'};
+let opts={...DEFAULTS};
+try{if(matchMedia('(prefers-color-scheme: dark)').matches)opts.mode='dark'}catch(e){}
+try{Object.assign(opts,JSON.parse(localStorage.getItem('csvStudioOpts')||'{}'))}catch(e){}
+
+const state={raw:'',fileName:'',rows:null,cols:[],sort:null,q:'',page:0,view:'table',zmap:null};
+const syncView=()=>document.querySelectorAll('#viewSeg button').forEach(b=>b.classList.toggle('on',b.dataset.v===state.view));
+
+/* ---------- parsing ---------- */
+function detectDelim(t){
+  const lines=t.split(/\r?\n/).slice(0,6).filter(Boolean);
+  let best=',',bs=-1;
+  for(const d of [',',';','\t','|']){
+    const counts=lines.map(l=>l.split(d).length-1);
+    const min=Math.min(...counts);
+    if(min>0&&min*10+counts.length>bs){bs=min*10+counts.length;best=d}
+  }
+  return best;
+}
+function parseCSV(text,d){
+  if(text.charCodeAt(0)===0xFEFF)text=text.slice(1);
+  const rows=[];let row=[],f='',q=false,i=0;const n=text.length;
+  while(i<n){
+    const c=text[i];
+    if(q){
+      if(c==='"'){if(text[i+1]==='"'){f+='"';i+=2;continue}q=false;i++;continue}
+      f+=c;i++;continue;
+    }
+    if(c==='"'&&f===''){q=true;i++;continue}
+    if(c===d){row.push(f);f='';i++;continue}
+    if(c==='\r'){i++;continue}
+    if(c==='\n'){row.push(f);rows.push(row);row=[];f='';i++;continue}
+    f+=c;i++;
+  }
+  if(f!==''||row.length){row.push(f);rows.push(row)}
+  return rows.filter(r=>!(r.length===1&&r[0].trim()===''));
+}
+function parseNum(s){
+  s=String(s==null?'':s).trim();if(!s)return NaN;
+  let neg=false;if(/^\(.*\)$/.test(s)){neg=true;s=s.slice(1,-1)}
+  s=s.replace(/[\s$€£¥₹,%]/g,'');
+  if(!/^[-+]?(\d+\.?\d*|\.\d+)(e[-+]?\d+)?$/i.test(s))return NaN;
+  const v=parseFloat(s);return neg?-v:v;
+}
+function parseDate(s){
+  s=String(s==null?'':s).trim();let m;
+  if(m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/))return new Date(+m[1],m[2]-1,+m[3]).getTime();
+  if(/^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}/.test(s)){const t=Date.parse(s);return isNaN(t)?NaN:t}
+  if(m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/)){let y=+m[3];if(y<100)y+=2000;return new Date(y,m[1]-1,+m[2]).getTime()}
+  return NaN;
+}
+function detectType(vals){
+  const v=vals.filter(x=>x!=='').slice(0,500);
+  if(!v.length)return 'text';
+  if(v.some(x=>/^0\d+$/.test(x.trim())))return 'text';
+  const n=v.filter(x=>!isNaN(parseNum(x))).length;
+  if(n/v.length>=.9)return 'number';
+  const d=v.filter(x=>!isNaN(parseDate(x))).length;
+  if(d/v.length>=.9)return 'date';
+  return 'text';
+}
+function prep(c){
+  const ri=c.i;
+  if(c.type==='number'||c.type==='date'){
+    const fn=c.type==='number'?parseNum:parseDate;
+    c.vals=state.rows.map(r=>fn(r[ri]));
+    const ok=c.vals.filter(v=>!isNaN(v));
+    c.min=ok.length?Math.min(...ok):0;c.max=ok.length?Math.max(...ok):0;
+  }else{c.vals=null}
+}
+function loadText(text,name){
+  state.raw=text;if(name!==undefined)state.fileName=name;
+  const d=$('#delim').value==='auto'?detectDelim(text):$('#delim').value;
+  let rows=parseCSV(text,d);
+  if(!rows.length){toast('That file looks empty');return}
+  const w=Math.max(...rows.map(r=>r.length));
+  rows=rows.map(r=>{while(r.length<w)r.push('');return r});
+  let headers;
+  if($('#hasHeader').checked)headers=rows.shift();else headers=Array.from({length:w},(_,i)=>'Column '+(i+1));
+  state.rows=rows;state.sort=null;state.zmap=null;state.view='table';syncView();state.q='';$('#q').value='';state.page=0;
+  state.cols=headers.map((h,i)=>{
+    const type=detectType(rows.map(r=>r[i]));
+    return {i,name:h||'Column '+(i+1),visible:true,align:'auto',type,fmt:'auto',dec:-1,vis:'none',open:false};
+  });
+  state.cols.forEach(prep);
+  if(state.fileName){
+    const auto=state.fileName.replace(/\.[^.]+$/,'').replace(/[_-]+/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+    if(!opts.title||opts.title===state.autoTitle)opts.title=auto;
+    state.autoTitle=auto;
+  }
+  syncControls();buildColPanel();render();
+}
+
+/* ---------- formatting ---------- */
+const CUR={usd:'USD',eur:'EUR',gbp:'GBP'};
+function fmtNum(v,c){
+  const d=c.dec;
+  try{
+    switch(c.fmt){
+      case 'number':return v.toLocaleString('en-US',{minimumFractionDigits:d>=0?d:0,maximumFractionDigits:d>=0?d:3});
+      case 'usd':case 'eur':case 'gbp':return v.toLocaleString('en-US',{style:'currency',currency:CUR[c.fmt],minimumFractionDigits:d>=0?d:2,maximumFractionDigits:d>=0?d:2});
+      case 'percent':return v.toLocaleString('en-US',{minimumFractionDigits:d>=0?d:0,maximumFractionDigits:d>=0?d:2})+'%';
+      case 'frac':return (v*100).toLocaleString('en-US',{minimumFractionDigits:d>=0?d:0,maximumFractionDigits:d>=0?d:2})+'%';
+      case 'compact':return v.toLocaleString('en-US',{notation:'compact',maximumFractionDigits:d>=0?d:1});
+    }
+  }catch(e){}
+  return String(v);
+}
+function fmtDate(ms,f){
+  const dt=new Date(ms),p=n=>String(n).padStart(2,'0');
+  if(f==='short')return dt.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  if(f==='long')return dt.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+  if(f==='iso')return dt.getFullYear()+'-'+p(dt.getMonth()+1)+'-'+p(dt.getDate());
+  if(f==='us')return (dt.getMonth()+1)+'/'+dt.getDate()+'/'+dt.getFullYear();
+  return null;
+}
+function textFmt(s,f){
+  if(f==='upper')return s.toUpperCase();
+  if(f==='lower')return s.toLowerCase();
+  if(f==='title')return s.toLowerCase().replace(/\b\w/g,c=>c.toUpperCase());
+  return s;
+}
+const hue=s=>{let h=0;s=String(s).toLowerCase();for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))>>>0;return (h*47)%360};
+function hl(s){
+  const q=state.q.trim();
+  if(!q)return esc(s);
+  const re=new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi');
+  let out='',last=0,m;
+  while((m=re.exec(s))){if(!m[0]){re.lastIndex++;continue}out+=esc(s.slice(last,m.index))+'<mark>'+esc(m[0])+'</mark>';last=m.index+m[0].length}
+  return out+esc(s.slice(last));
+}
+
+function cellHTML(c,r,ri){
+  const raw=r[c.i];
+  const al=c.align==='auto'?(c.type==='number'?'right':'left'):c.align;
+  let st=`text-align:${al};`,cls=c.fz?'fz':'';
+  if(raw===''){return `<td class="empty ${cls}" style="${st}">${opts.emptyDash?'—':''}</td>`}
+  let txt=raw;
+  if(c.type==='number'){
+    const v=c.vals[ri];
+    if(!isNaN(v)){
+      if(c.fmt!=='auto')txt=fmtNum(v,c);
+      if(opts.negRed&&v<0)cls+=' neg';
+      const t=c.max>c.min?(v-c.min)/(c.max-c.min):0;
+      if(c.vis==='bars')st+=`background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 32%,transparent) ${(t*100).toFixed(1)}%,transparent ${(t*100).toFixed(1)}%);`;
+      else if(c.vis==='heat')st+=`background:color-mix(in srgb,var(--accent) ${(t*55).toFixed(0)}%,transparent);`;
+    }
+  }else if(c.type==='date'){
+    const v=c.vals[ri];if(!isNaN(v)){const f=fmtDate(v,c.fmt);if(f)txt=f}
+  }else txt=textFmt(raw,c.fmt);
+  let inner=hl(txt);
+  if(c.type==='text'){
+    if(c.vis==='badge')inner=`<span class="badge" style="--h:${hue(raw)}">${inner}</span>`;
+    else if(opts.links){
+      if(/^https?:\/\/\S+$/i.test(raw))inner=`<a href="${esc(raw)}" target="_blank" rel="noopener">${inner}</a>`;
+      else if(/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(raw))inner=`<a href="mailto:${esc(raw)}">${inner}</a>`;
+    }
+  }
+  return `<td class="${cls}" style="${st}" title="${esc(raw)}">${inner}</td>`;
+}
+
+/* ---------- view / render ---------- */
+const visCols=()=>state.cols.filter(c=>c.visible);
+function getView(){
+  let idx=state.rows.map((_,i)=>i);
+  const q=state.q.trim().toLowerCase(),vc=visCols();
+  if(q)idx=idx.filter(i=>vc.some(c=>String(state.rows[i][c.i]).toLowerCase().includes(q)));
+  if(state.sort){
+    const c=state.cols[state.sort.ci],dir=state.sort.dir;
+    idx.sort((a,b)=>{
+      let x,y,xe,ye;
+      if(c.vals){x=c.vals[a];y=c.vals[b];xe=isNaN(x);ye=isNaN(y)}
+      else{x=state.rows[a][c.i];y=state.rows[b][c.i];xe=x==='';ye=y==='';}
+      if(xe||ye)return xe&&ye?0:xe?1:-1;
+      const r=c.vals?x-y:String(x).localeCompare(String(y),undefined,{numeric:true,sensitivity:'base'});
+      return r*dir;
+    });
+  }
+  return idx;
+}
+function render(){
+  const has=!!state.rows;
+  $('#empty').hidden=has;$('#sheet').hidden=!has;$('#toolbar').hidden=!has;
+  if(!has){$('#pager').hidden=true;return}
+  applyStyle();
+  if(state.view==='zephyr'&&state.zmap){renderZephyr();return}
+  const vc=visCols();
+  vc.forEach((c,k)=>c.fz=k===0);
+  const view=getView();
+  const ps=opts.pageSize==='all'?Infinity:+opts.pageSize;
+  const pages=Math.max(1,Math.ceil(view.length/ps));
+  state.page=Math.min(state.page,pages-1);
+  const start=ps===Infinity?0:state.page*ps;
+  const slice=ps===Infinity?view:view.slice(start,start+ps);
+  const hasRn=opts.rowNums;
+  let h=`<table class="tbl${hasRn?' hasrn':''}"><thead><tr>`;
+  if(hasRn)h+='<th class="rn">#</th>';
+  for(const c of vc){
+    const al=c.align==='auto'?(c.type==='number'?'right':'left'):c.align;
+    const s=state.sort&&state.sort.ci===c.i?`<span class="si">${state.sort.dir>0?'▲':'▼'}</span>`:'';
+    h+=`<th data-ci="${c.i}" class="${c.fz?'fz':''}" style="text-align:${al}">${esc(c.name)}${s}</th>`;
+  }
+  h+='</tr></thead><tbody>';
+  slice.forEach((ri,k)=>{
+    const r=state.rows[ri];
+    h+='<tr>'+(hasRn?`<td class="rn">${start+k+1}</td>`:'')+vc.map(c=>cellHTML(c,r,ri)).join('')+'</tr>';
+  });
+  if(!slice.length)h+=`<tr><td colspan="${vc.length+(hasRn?1:0)}" class="empty" style="text-align:center;padding:30px">No rows match “${esc(state.q)}”</td></tr>`;
+  h+='</tbody>';
+  if(opts.totals!=='none'&&slice.length){
+    h+='<tfoot><tr>'+(hasRn?'<td class="rn"></td>':'');
+    vc.forEach((c,k)=>{
+      const al=c.align==='auto'?(c.type==='number'?'right':'left'):c.align;
+      let t='';
+      if(c.type==='number'){
+        const vals=view.map(i=>c.vals[i]).filter(v=>!isNaN(v));
+        if(vals.length){const s=vals.reduce((a,b)=>a+b,0);t=fmtNum2(opts.totals==='sum'?s:s/vals.length,c)}
+      }else if(k===0)t=opts.totals==='sum'?'Total':'Average';
+      h+=`<td class="${c.fz?'fz':''}" style="text-align:${al}">${esc(t)}</td>`;
+    });
+    h+='</tr></tfoot>';
+  }
+  h+='</table>';
+  const meta=opts.showMeta?`<p>${view.length.toLocaleString()} row${view.length===1?'':'s'} · ${vc.length} column${vc.length===1?'':'s'}${state.q?' · filtered':''}</p>`:'';
+  const head=(opts.title||meta)?`<div class="doc-head">${opts.title?`<h2>${esc(opts.title)}</h2>`:''}${meta}</div>`:'';
+  $('#sheet').innerHTML=head+`<div class="tblwrap">${h}</div>`;
+  $('#count').textContent=`${view.length.toLocaleString()} of ${state.rows.length.toLocaleString()} rows`;
+  $('#clearSort').hidden=!state.sort;
+  const pg=$('#pager');pg.hidden=pages<=1;
+  pg.innerHTML=`<button class="btn" id="prev" ${state.page===0?'disabled':''}>← Prev</button><span class="muted">Page ${state.page+1} of ${pages}</span><button class="btn" id="next" ${state.page>=pages-1?'disabled':''}>Next →</button>`;
+}
+function fmtNum2(v,c){return c.fmt==='auto'?(Math.round(v*100)/100).toLocaleString('en-US'):fmtNum(v,c)}
+
+function applyStyle(){
+  const t=THEMES[opts.theme]||THEMES.mono;
+  root.dataset.mode=opts.mode;root.dataset.theme=opts.theme;$('#modeBtn').textContent=opts.mode==='dark'?'☀️':'🌙';
+  root.style.setProperty('--accent',opts.mode==='dark'&&t.d?t.d:t.a);root.style.setProperty('--hbg',opts.mode==='dark'&&t.hd?t.hd:t.h);
+  const s=$('#sheet'),[py,px]=DENS[opts.density]||DENS.cozy;
+  s.className=['tw','hs-'+opts.hs,'hc-'+opts.hc,'lines-'+opts.lines,opts.zebra&&'zebra',opts.hover&&'hover',opts.wrap&&'wrap',opts.sticky&&'sticky',opts.freeze&&'freeze',opts.rounded&&'rounded',opts.shadow&&'shadow'].filter(Boolean).join(' ');
+  s.style.cssText=`--fs:${opts.fontSize}px;--py:${py}px;--px:${px}px;--ff:${FONTS[opts.font]||FONTS.sans}`;
+  try{localStorage.setItem('csvStudioOpts',JSON.stringify(opts))}catch(e){}
+}
+
+/* ---------- sidebar wiring ---------- */
+function syncControls(){
+  document.querySelectorAll('[data-opt]').forEach(el=>{
+    const k=el.dataset.opt;
+    if(el.classList.contains('seg'))el.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.v===String(opts[k])));
+    else if(el.type==='checkbox')el.checked=!!opts[k];
+    else el.value=opts[k];
+  });
+  $('#fsv').textContent=opts.fontSize+'px';
+  $('#pageSize').value=opts.pageSize;
+  document.querySelectorAll('#swatches button').forEach(b=>b.classList.toggle('on',b.dataset.t===opts.theme));
+}
+$('#swatches').innerHTML=Object.entries(THEMES).map(([k,t])=>`<button title="${k}" data-t="${k}" style="background:linear-gradient(135deg,${t.h} 50%,${t.a} 50%)"></button>`).join('');
+$('#swatches').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;opts.theme=b.dataset.t;syncControls();render()});
+document.querySelector('.side').addEventListener('click',e=>{
+  const b=e.target.closest('.seg button');if(!b)return;
+  const k=b.parentElement.dataset.opt;if(!k)return;
+  opts[k]=b.dataset.v;syncControls();render();
+});
+document.querySelector('.side').addEventListener('input',e=>{
+  const el=e.target,k=el.dataset&&el.dataset.opt;if(!k||el.classList.contains('seg'))return;
+  opts[k]=el.type==='checkbox'?el.checked:el.type==='range'?+el.value:el.value;
+  $('#fsv').textContent=opts.fontSize+'px';
+  render();
+});
+
+$('#modeBtn').onclick=()=>{opts.mode=opts.mode==='dark'?'light':'dark';syncControls();applyStyle()};
+/* column panel */
+const FMT_OPTS={
+  number:[['auto','Original'],['number','Number (1,234)'],['usd','$ Currency'],['eur','€ Currency'],['gbp','£ Currency'],['percent','% (value as is)'],['frac','% (fraction × 100)'],['compact','Compact (1.2K)']],
+  date:[['auto','Original'],['short','Oct 24, 2026'],['long','Saturday, October 24, 2026'],['iso','2026-10-24'],['us','10/24/2026']],
+  text:[['auto','As is'],['upper','UPPERCASE'],['lower','lowercase'],['title','Title Case']]
+};
+const VIS_OPTS={number:[['none','None'],['bars','Data bars'],['heat','Heat map']],text:[['none','None'],['badge','Colored badges']],date:[['none','None']]};
+const optsHtml=(list,sel)=>list.map(([v,l])=>`<option value="${v}"${String(v)===String(sel)?' selected':''}>${l}</option>`).join('');
+function buildColPanel(){
+  $('#colHint').textContent=state.cols.length?`(${state.cols.length})`:'';
+  if(!state.cols.length){$('#cols').innerHTML='<p class="muted">Load a file to format its columns.</p>';return}
+  $('#cols').innerHTML=state.cols.map(c=>`
+  <div class="colitem${c.open?' open':''}${c.visible?'':' hidden'}" data-ci="${c.i}">
+    <div class="colhead"><input type="checkbox" data-k="visible" ${c.visible?'checked':''} title="Show / hide"><span class="nm">${esc(c.name)}</span><span class="chip">${c.type}</span></div>
+    <div class="colbody">
+      <div class="row"><label>Name</label><input type="text" data-k="name" value="${esc(c.name)}" style="width:170px"></div>
+      <div class="row"><label>Align</label><div class="seg" data-k="align">${[['auto','Auto'],['left','L'],['center','C'],['right','R']].map(([v,l])=>`<button data-v="${v}" class="${c.align===v?'on':''}">${l}</button>`).join('')}</div></div>
+      <div class="row"><label>Type</label><select data-k="type">${optsHtml([['text','Text'],['number','Number'],['date','Date']],c.type)}</select></div>
+      <div class="row"><label>Format</label><select data-k="fmt">${optsHtml(FMT_OPTS[c.type],c.fmt)}</select></div>
+      ${c.type==='number'?`<div class="row"><label>Decimals</label><select data-k="dec">${optsHtml([[-1,'Auto'],[0,'0'],[1,'1'],[2,'2'],[3,'3'],[4,'4']],c.dec)}</select></div>`:''}
+      ${VIS_OPTS[c.type].length>1?`<div class="row"><label>Visual</label><select data-k="vis">${optsHtml(VIS_OPTS[c.type],c.vis)}</select></div>`:''}
+    </div>
+  </div>`).join('');
+}
+$('#cols').addEventListener('click',e=>{
+  const item=e.target.closest('.colitem');if(!item)return;
+  const c=state.cols[+item.dataset.ci];
+  const sb=e.target.closest('.seg button');
+  if(sb){c.align=sb.dataset.v;buildColPanel();render();return}
+  if(e.target.closest('.colhead')&&e.target.type!=='checkbox'){c.open=!c.open;item.classList.toggle('open',c.open)}
+});
+$('#cols').addEventListener('change',e=>{
+  const item=e.target.closest('.colitem');if(!item)return;
+  const c=state.cols[+item.dataset.ci],k=e.target.dataset.k;if(!k||k==='align')return;
+  if(k==='visible'){c.visible=e.target.checked;item.classList.toggle('hidden',!c.visible)}
+  else if(k==='name'){c.name=e.target.value;item.querySelector('.nm').textContent=c.name}
+  else if(k==='type'){c.type=e.target.value;c.fmt='auto';c.vis='none';prep(c);buildColPanel()}
+  else if(k==='dec')c.dec=+e.target.value;
+  else c[k]=e.target.value;
+  if(state.sort&&state.sort.ci===c.i&&k==='type')state.sort=null;
+  render();
+});
+$('#cols').addEventListener('input',e=>{
+  if(e.target.dataset.k==='name'){const c=state.cols[+e.target.closest('.colitem').dataset.ci];c.name=e.target.value;render()}
+});
+
+/* header sort + toolbar */
+$('#sheet').addEventListener('click',e=>{
+  const th=e.target.closest('th[data-ci]');if(!th)return;
+  const ci=+th.dataset.ci;
+  if(!state.sort||state.sort.ci!==ci)state.sort={ci,dir:1};
+  else if(state.sort.dir===1)state.sort.dir=-1;
+  else state.sort=null;
+  render();
+});
+$('#q').addEventListener('input',e=>{state.q=e.target.value;state.page=0;render()});
+$('#clearSort').addEventListener('click',()=>{state.sort=null;render()});
+$('#pageSize').addEventListener('change',e=>{opts.pageSize=e.target.value;state.page=0;render()});
+$('#pager').addEventListener('click',e=>{
+  if(e.target.id==='prev')state.page--;else if(e.target.id==='next')state.page++;else return;
+  render();$('#stage').scrollTo({top:0});
+});
+
+/* loading */
+async function readFile(f){loadText(await f.text(),f.name)}
+$('#pick').onclick=$('#pick2').onclick=()=>$('#file').click();
+$('#file').onchange=e=>{if(e.target.files[0])readFile(e.target.files[0]);e.target.value=''};
+$('#loadPaste').onclick=()=>{const t=$('#paste').value;if(t.trim())loadText(t,'Pasted data');else toast('Paste some CSV first')};
+$('#delim').onchange=$('#hasHeader').onchange=()=>{if(state.raw)loadText(state.raw)};
+['dragenter','dragover'].forEach(ev=>window.addEventListener(ev,e=>{e.preventDefault();document.body.classList.add('drag')}));
+['dragleave','drop'].forEach(ev=>window.addEventListener(ev,e=>{e.preventDefault();if(ev==='drop'||e.relatedTarget===null)document.body.classList.remove('drag')}));
+window.addEventListener('drop',e=>{const f=e.dataTransfer.files[0];if(f)readFile(f)});
+
+const SAMPLE=`Account,Region,Status,Signed,Seats,Revenue,Growth %,Website
+Northwind Traders,North America,Active,2024-01-15,120,184500.5,12.4,https://northwind.example.com
+Globex Corporation,Europe,Active,2024-02-03,85,132250,8.1,https://globex.example.com
+"Initech, Inc.",North America,At Risk,2023-11-21,40,61000,-4.7,https://initech.example.com
+Umbrella Labs,Asia Pacific,Active,2024-03-09,210,342900.75,21.9,https://umbrella.example.com
+Hooli,North America,Churned,2023-06-30,15,9800,-32.5,https://hooli.example.com
+Stark Industries,Europe,Active,2024-04-18,300,512000,18.3,https://stark.example.com
+Wayne Enterprises,North America,Trial,2024-05-27,25,0,0,https://wayne.example.com
+Wonka Industries,Europe,At Risk,2023-09-12,60,88400,-9.2,https://wonka.example.com
+Soylent Corp,Asia Pacific,Active,2024-06-02,95,141300.25,6.5,https://soylent.example.com
+Cyberdyne Systems,Asia Pacific,Trial,2024-06-20,10,0,0,
+Acme Co,Latin America,Active,2024-01-29,70,99750,14.2,https://acme.example.com
+Vandelay Industries,Latin America,Churned,2023-08-08,22,15200,-27.1,
+Oscorp,North America,Active,2024-07-11,175,267800,16.8,https://oscorp.example.com
+Massive Dynamic,Europe,Trial,2024-08-05,30,0,0,https://massive.example.com
+Tyrell Corp,Asia Pacific,At Risk,2023-12-14,55,72100,-2.3,https://tyrell.example.com`;
+$('#sample').onclick=$('#sample2').onclick=()=>{opts.title='';loadText(SAMPLE,'Quarterly accounts.csv');
+  const by=n=>state.cols.find(c=>c.name===n);
+  by('Revenue').fmt='usd';by('Revenue').dec=0;by('Revenue').vis='bars';
+  by('Growth %').fmt='percent';by('Growth %').dec=1;by('Growth %').vis='heat';
+  by('Signed').fmt='short';by('Status').vis='badge';by('Seats').fmt='number';
+  buildColPanel();render()};
+
+/* export */
+function exportRows(){
+  const vc=visCols(),view=getView();
+  return [vc.map(c=>c.name),...view.map(i=>vc.map(c=>state.rows[i][c.i]))];
+}
+function download(name,text,type){
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+const base=()=>(state.fileName||'table').replace(/\.[^.]+$/,'');
+function need(){if(!state.rows){toast('Load a CSV first');return false}return true}
+$('#expCsv').onclick=()=>{if(!need())return;
+  const q=v=>/[",\n\r]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;
+  download(base()+'-clean.csv','﻿'+exportRows().map(r=>r.map(q).join(',')).join('\r\n'),'text/csv')};
+$('#expCopy').onclick=async()=>{if(!need())return;
+  const t=exportRows().map(r=>r.join('\t')).join('\n');
+  try{await navigator.clipboard.writeText(t);toast('Copied — paste into Sheets or Excel')}catch(e){toast('Clipboard blocked by browser')}};
+$('#expHtml').onclick=()=>{if(!need())return;
+  const css=document.getElementById('mainCss').textContent+'.tblwrap{max-height:none!important}body{padding:24px}';
+  download(base()+'-styled.html',`<!doctype html><html lang="en" data-mode="${opts.mode}" style="${esc(root.getAttribute('style')||'')}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(opts.title||base())}</title><style>${css}</style></head><body>${$('#sheet').outerHTML}</body></html>`,'text/html')};
+/* JSON */
+function typedValue(c,ri){
+  const raw=state.rows[ri][c.i];if(raw==='')return null;
+  if(c.type==='number'){const v=c.vals[ri];return isNaN(v)?raw:v}
+  if(c.type==='date'){const v=c.vals[ri];return isNaN(v)?raw:fmtDate(v,'iso')}
+  return raw;
+}
+$('#expJson').onclick=()=>{if(!need())return;
+  const vc=visCols(),seen={};
+  const keys=vc.map(c=>{let k=c.name||'column',n=seen[k]=(seen[k]||0)+1;return n>1?k+'_'+n:k});
+  const out=getView().map(ri=>Object.fromEntries(vc.map((c,k)=>[keys[k],typedValue(c,ri)])));
+  download(base()+'.json',JSON.stringify(out,null,2),'application/json')};
+
+/* Excel (.xlsx) — minimal zip writer, no libraries */
+const CRC=(()=>{const t=[];for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0}return t})();
+const crc32=b=>{let c=0xFFFFFFFF;for(let i=0;i<b.length;i++)c=CRC[(c^b[i])&255]^(c>>>8);return (c^0xFFFFFFFF)>>>0};
+function zip(files){
+  const enc=new TextEncoder(),parts=[],central=[];let off=0;
+  for(const [name,text] of files){
+    const nb=enc.encode(name),data=enc.encode(text),crc=crc32(data);
+    const h=new DataView(new ArrayBuffer(30));
+    h.setUint32(0,0x04034b50,true);h.setUint16(4,20,true);h.setUint16(6,0x0800,true);h.setUint32(14,crc,true);h.setUint32(18,data.length,true);h.setUint32(22,data.length,true);h.setUint16(26,nb.length,true);
+    parts.push(new Uint8Array(h.buffer),nb,data);
+    const c=new DataView(new ArrayBuffer(46));
+    c.setUint32(0,0x02014b50,true);c.setUint16(4,20,true);c.setUint16(6,20,true);c.setUint16(8,0x0800,true);c.setUint32(16,crc,true);c.setUint32(20,data.length,true);c.setUint32(24,data.length,true);c.setUint16(28,nb.length,true);c.setUint32(42,off,true);
+    central.push(new Uint8Array(c.buffer),nb);
+    off+=30+nb.length+data.length;
+  }
+  const csize=central.reduce((a,b)=>a+b.length,0);
+  const e=new DataView(new ArrayBuffer(22));
+  e.setUint32(0,0x06054b50,true);e.setUint16(8,files.length,true);e.setUint16(10,files.length,true);e.setUint32(12,csize,true);e.setUint32(16,off,true);
+  return new Blob([...parts,...central,new Uint8Array(e.buffer)],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+}
+const xe=s=>String(s).replace(/[\x00-\x08\x0b\x0c\x0e-\x1f]/g,'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const colL=n=>{let s='';for(n++;n>0;n=Math.floor((n-1)/26))s=String.fromCharCode(65+(n-1)%26)+s;return s};
+$('#expXlsx').onclick=()=>{if(!need())return;
+  const vc=visCols(),view=getView(),hbg=(THEMES[opts.theme]||THEMES.mono).h.slice(1).toUpperCase();
+  const widths=vc.map(c=>Math.min(60,Math.max(8,c.name.length+3)));
+  let rows=`<row r="1">`+vc.map((c,k)=>`<c r="${colL(k)}1" s="1" t="inlineStr"><is><t>${xe(c.name)}</t></is></c>`).join('')+'</row>';
+  view.forEach((ri,n)=>{
+    const r=n+2;
+    rows+=`<row r="${r}">`+vc.map((c,k)=>{
+      const raw=state.rows[ri][c.i];if(raw==='')return '';
+      const ref=colL(k)+r;widths[k]=Math.min(60,Math.max(widths[k],String(raw).length+2));
+      const v=c.vals?c.vals[ri]:NaN;
+      if(c.type==='number'&&!isNaN(v))return `<c r="${ref}"><v>${v}</v></c>`;
+      if(c.type==='date'&&!isNaN(v)){const d=new Date(v);return `<c r="${ref}" s="2"><v>${Date.UTC(d.getFullYear(),d.getMonth(),d.getDate(),d.getHours(),d.getMinutes(),d.getSeconds())/864e5+25569}</v></c>`}
+      return `<c r="${ref}" t="inlineStr"><is><t xml:space="preserve">${xe(raw)}</t></is></c>`;
+    }).join('')+'</row>';
+  });
+  const last=colL(vc.length-1)+(view.length+1);
+  const sheet=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols>${widths.map((w,k)=>`<col min="${k+1}" max="${k+1}" width="${w}" customWidth="1"/>`).join('')}</cols><sheetData>${rows}</sheetData><autoFilter ref="A1:${last}"/></worksheet>`;
+  const NS='http://schemas.openxmlformats.org/';
+  const files=[
+   ['[Content_Types].xml',`<?xml version="1.0" encoding="UTF-8"?><Types xmlns="${NS}package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`],
+   ['_rels/.rels',`<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="${NS}package/2006/relationships"><Relationship Id="rId1" Type="${NS}officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`],
+   ['xl/workbook.xml',`<?xml version="1.0" encoding="UTF-8"?><workbook xmlns="${NS}spreadsheetml/2006/main" xmlns:r="${NS}officeDocument/2006/relationships"><sheets><sheet name="${xe((opts.title||'Sheet1').replace(/[\\\/?*\[\]:]/g,'').slice(0,31)||'Sheet1')}" sheetId="1" r:id="rId1"/></sheets></workbook>`],
+   ['xl/_rels/workbook.xml.rels',`<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="${NS}package/2006/relationships"><Relationship Id="rId1" Type="${NS}officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="${NS}officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`],
+   ['xl/styles.xml',`<?xml version="1.0" encoding="UTF-8"?><styleSheet xmlns="${NS}spreadsheetml/2006/main"><numFmts count="1"><numFmt numFmtId="164" formatCode="yyyy\\-mm\\-dd"/></numFmts><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF${hbg}"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="3"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/><xf numFmtId="164" fontId="0" fillId="0" borderId="0" xfId="0" applyNumberFormat="1"/></cellXfs></styleSheet>`],
+   ['xl/worksheets/sheet1.xml',sheet]];
+  const a=document.createElement('a');a.href=URL.createObjectURL(zip(files));a.download=base()+'.xlsx';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  toast('Excel file downloaded')};
+
+/* Zephyr Scale CSV import */
+const ZFIELDS=[['name','Name *',/name|title|summary|test.?case|scenario/i],['objective','Objective',/objective|description|purpose/i],['precondition','Precondition',/precond|prereq|given/i],['priority','Priority',/priority|severity/i],['status','Status',/^status$|state/i],['folder','Folder',/folder|suite|module|feature|area|component/i],['labels','Labels',/label|tag/i],['owner','Owner',/owner|assignee|author/i],['step','Step',/^step|action|when/i],['data','Test data',/data|input/i],['expected','Expected result',/expect|result|then|outcome/i]];
+$('#expZephyr').onclick=()=>{if(!need())return;
+  const used=new Set();
+  $('#zMap').innerHTML=ZFIELDS.map(([k,l,re])=>{
+    const guess=state.zmap?(state.zmap[k]!==''&&state.zmap[k]!=null?state.cols[+state.zmap[k]]:null):state.cols.find(c=>!used.has(c.i)&&re.test(c.name));if(guess&&!state.zmap&&k!=='status')used.add(guess.i);
+    return `<div class="row"><label>${l}</label><select data-z="${k}"><option value="">— none —</option>${state.cols.map(c=>`<option value="${c.i}"${guess&&guess.i===c.i?' selected':''}>${esc(c.name)}</option>`).join('')}</select></div>`}).join('')
+   +`<div class="row"><label>Default status</label><select data-z="defStatus"><option>Draft</option><option>Approved</option><option>Deprecated</option></select></div><div class="row"><label>Default priority</label><select data-z="defPriority"><option>Normal</option><option>High</option><option>Low</option></select></div>`;
+  if(state.zmap){document.querySelector('[data-z=defStatus]').value=state.zmap.defStatus;document.querySelector('[data-z=defPriority]').value=state.zmap.defPriority}
+  $('#zModal').hidden=false};
+$('#viewSeg').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.v==='zephyr'){if(state.zmap){state.view='zephyr';syncView();render()}else $('#expZephyr').click()}
+  else{state.view='table';syncView();render()}
+});
+function zModel(){
+  const m=state.zmap,g=(r,k)=>m[k]===''?'':String(r[+m[k]]).trim(),map=new Map();
+  for(const ri of getView()){
+    const r=state.rows[ri],name=g(r,'name');if(!name)continue;
+    let t=map.get(name);
+    if(!t){const f=g(r,'folder');t={name,status:g(r,'status')||m.defStatus,priority:g(r,'priority')||m.defPriority,folder:f&&!f.startsWith('/')?'/'+f:f,owner:g(r,'owner'),labels:g(r,'labels').split(/[;,]\s*/).filter(Boolean),pre:g(r,'precondition'),obj:g(r,'objective'),steps:[]};map.set(name,t)}
+    const s=g(r,'step'),d=g(r,'data'),e=g(r,'expected');if(s||d||e)t.steps.push({s,d,e});
+  }
+  return [...map.values()];
+}
+function renderZephyr(){
+  const tests=zModel(),ps=opts.pageSize==='all'?Infinity:+opts.pageSize,pages=Math.max(1,Math.ceil(tests.length/ps));
+  state.page=Math.min(state.page,pages-1);
+  const start=ps===Infinity?0:state.page*ps,slice=ps===Infinity?tests:tests.slice(start,start+ps);
+  const stat=s=>({approved:'ok',deprecated:'bad'}[s.toLowerCase()]||''),pri=p=>({high:'high',critical:'high',urgent:'high',blocker:'high',low:'low'}[p.toLowerCase()]||'');
+  const steps=tests.reduce((a,t)=>a+t.steps.length,0);
+  let h=slice.map((t,k)=>{
+    const meta=[['Priority',`<span class="zp ${pri(t.priority)}">${esc(t.priority)}</span>`],
+      t.folder&&['Folder',esc(t.folder.split('/').filter(Boolean).join(' › '))],
+      t.owner&&['Owner',hl(t.owner)],
+      t.labels.length&&['Labels',t.labels.map(l=>`<span class="zchip">${esc(l)}</span>`).join('')]].filter(Boolean);
+    return `<div class="zt"><div class="zt-h"><span class="zkey">T${start+k+1}</span><span class="zname">${hl(t.name)}</span><span class="zst ${stat(t.status)}">${esc(t.status)}</span></div>
+    <div class="zmeta">${meta.map(([l,v])=>`<div><b>${l}</b>${v}</div>`).join('')}</div>
+    ${t.obj?`<div class="zblock"><b>Objective</b>${hl(t.obj)}</div>`:''}
+    ${t.pre?`<div class="zblock"><b>Precondition</b>${hl(t.pre)}</div>`:''}
+    ${t.steps.length?`<table class="zsteps"><thead><tr><th>#</th><th>Step</th><th>Test data</th><th>Expected result</th></tr></thead><tbody>${t.steps.map((s,i)=>`<tr><td class="n">${i+1}</td><td>${hl(s.s)}</td><td>${hl(s.d)}</td><td>${hl(s.e)}</td></tr>`).join('')}</tbody></table>`:'<div class="zn">No test script steps</div>'}</div>`;
+  }).join('')||`<p class="muted">No test cases match “${esc(state.q)}”</p>`;
+  const meta=opts.showMeta?`<p>${tests.length} test case${tests.length===1?'':'s'} · ${steps} step${steps===1?'':'s'}</p>`:'';
+  $('#sheet').innerHTML=((opts.title||meta)?`<div class="doc-head">${opts.title?`<h2>${esc(opts.title)}</h2>`:''}${meta}</div>`:'')+h;
+  $('#count').textContent=`${tests.length} test cases from ${state.rows.length.toLocaleString()} rows`;
+  $('#clearSort').hidden=true;
+  const pg=$('#pager');pg.hidden=pages<=1;
+  pg.innerHTML=`<button class="btn" id="prev" ${state.page===0?'disabled':''}>← Prev</button><span class="muted">Page ${state.page+1} of ${pages}</span><button class="btn" id="next" ${state.page>=pages-1?'disabled':''}>Next →</button>`;
+}
+$('#zCancel').onclick=()=>$('#zModal').hidden=true;
+$('#zModal').addEventListener('click',e=>{if(e.target.id==='zModal')e.target.hidden=true});
+const readZ=()=>{const m={};document.querySelectorAll('#zMap [data-z]').forEach(s=>m[s.dataset.z]=s.value);return m};
+$('#zView').onclick=()=>{const m=readZ();if(m.name==='')return toast('Pick a column for Name');
+  state.zmap=m;state.view='zephyr';state.page=0;$('#zModal').hidden=true;syncView();render()};
+$('#zGo').onclick=()=>{
+  const m=readZ();
+  if(m.name==='')return toast('Pick a column for Name');
+  const g=(r,k)=>m[k]===''?'':String(r[+m[k]]).trim();
+  const H=['Name','Status','Precondition','Objective','Folder','Priority','Component','Owner','Estimated Time','Labels','Coverage (Issues)','Test Script (Step-by-Step) - Step','Test Script (Step-by-Step) - Test Data','Test Script (Step-by-Step) - Expected Result'];
+  const q=v=>/[",\n\r]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;
+  const out=[H],seen=new Set();
+  for(const ri of getView()){
+    const r=state.rows[ri],name=g(r,'name');if(!name)continue;
+    const first=!seen.has(name);seen.add(name);
+    let folder=g(r,'folder');if(folder&&!folder.startsWith('/'))folder='/'+folder;
+    out.push(first?[name,g(r,'status')||m.defStatus,g(r,'precondition'),g(r,'objective'),folder,g(r,'priority')||m.defPriority,'',g(r,'owner'),'',g(r,'labels').replace(/[;,]\s*/g,', '),'',g(r,'step'),g(r,'data'),g(r,'expected')]
+      :['','','','','','','','','','','',g(r,'step'),g(r,'data'),g(r,'expected')]);
+  }
+  download(base()+'-zephyr.csv','﻿'+out.map(r=>r.map(q).join(',')).join('\r\n'),'text/csv');
+  $('#zModal').hidden=true;toast(`Zephyr CSV ready — ${seen.size} test case${seen.size===1?'':'s'}`)};
+
+$('#expPrint').onclick=()=>{if(need())window.print()};
+$('#reset').onclick=()=>{const t=opts.title;opts={...DEFAULTS,title:t};syncControls();render();toast('Formatting reset')};
+
+let tt;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2200)}
+
+syncControls();applyStyle();
+</script>
+</body>
+</html>

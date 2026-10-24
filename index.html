@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Agent Hub</title>
+<style>
+:root{--bg:#f4f5f7;--surface:#fff;--surface2:#eef0f3;--text:#14181f;--mut:#5f6773;--border:#e1e4e9;--accent:#2457d6;--accent-bg:#e8eefc;--ok:#3b6d11;--ok-bg:#eaf3de;--warn:#854f0b;--warn-bg:#faeeda;--bad:#a32d2d;--bad-bg:#fcebeb}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#181816;--surface:#222220;--surface2:#2c2c2a;--text:#ecebe6;--mut:#a3a29b;--border:#3a3a37;--accent:#85b7eb;--accent-bg:#0c447c;--ok:#c0dd97;--ok-bg:#27500a;--warn:#fac775;--warn-bg:#633806;--bad:#f7c1c1;--bad-bg:#791f1f}}
+:root[data-theme=dark]{--bg:#181816;--surface:#222220;--surface2:#2c2c2a;--text:#ecebe6;--mut:#a3a29b;--border:#3a3a37;--accent:#85b7eb;--accent-bg:#0c447c;--ok:#c0dd97;--ok-bg:#27500a;--warn:#fac775;--warn-bg:#633806;--bad:#f7c1c1;--bad-bg:#791f1f}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+.app{display:grid;grid-template-columns:224px minmax(0,1fr);min-height:100vh}
+nav{background:var(--surface);border-right:1px solid var(--border);padding:18px 12px;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:4px}
+nav h1{font-size:15px;font-weight:600;margin:0 8px 16px;display:flex;align-items:center;gap:10px;letter-spacing:-.01em}
+nav h1:before{content:"";width:26px;height:26px;border-radius:7px;background:linear-gradient(135deg,var(--accent),#7b5cf0)}
+nav .grp{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut);margin:14px 10px 4px}
+nav button{all:unset;display:flex;gap:8px;align-items:center;padding:8px 10px;border-radius:8px;cursor:pointer;color:var(--mut)}
+nav button:hover{background:var(--surface2)}
+nav button.on{background:var(--accent-bg);color:var(--accent);font-weight:500}
+nav .sp{flex:1}
+nav .svc{padding:8px 10px;font-size:12px;color:var(--mut)}
+main{padding:24px 32px;max-width:1280px;width:100%;min-width:0;display:flex;flex-direction:column;gap:16px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+h2{font-size:22px;font-weight:600;letter-spacing:-.02em;margin:0}
+.mut{color:var(--mut)}
+.small{font-size:12px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;box-shadow:0 1px 2px rgba(16,24,40,.04)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.stat .n{font-size:26px;font-weight:600;letter-spacing:-.02em;line-height:1.2}
+.stat .l{font-size:12px;color:var(--mut)}
+.sbar{height:8px;border-radius:4px;background:var(--surface2);min-width:120px}.sbar i{display:block;height:100%;border-radius:4px;background:var(--accent)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.pill{font-size:11px;font-weight:500;padding:2px 9px;border-radius:999px;background:var(--surface2);color:var(--mut);white-space:nowrap}
+.pill.running{background:var(--accent-bg);color:var(--accent)}
+.pill.succeeded,.pill.done{background:var(--ok-bg);color:var(--ok)}
+.pill.failed,.pill.interrupted{background:var(--bad-bg);color:var(--bad)}
+.pill.pending,.pill.cancelled,.pill.idle{background:var(--surface2);color:var(--mut)}
+.pill.approval{background:var(--warn-bg);color:var(--warn)}
+button.b,select,input{font:inherit;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:7px 12px}
+button.b{cursor:pointer}
+button.b:hover{background:var(--surface2)}
+button.b.pri{background:var(--accent);color:#fff;border-color:var(--accent)}button.b.pri:hover{filter:brightness(1.08);background:var(--accent)}
+button.b.full{width:100%;margin-top:10px}
+input[type=text]{min-width:260px}
+.bar{height:6px;border-radius:3px;background:var(--surface2);overflow:hidden;margin-top:10px}
+.bar i{display:block;height:100%;background:var(--accent)}
+table{width:100%;border-collapse:collapse}
+td,th{text-align:left;padding:7px 8px;border-bottom:1px solid var(--border);font-size:13px}
+th{color:var(--mut);font-weight:500;font-size:12px}
+a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+.mono{font-family:ui-monospace,Menlo,monospace;font-size:12px}
+.err{color:var(--bad)}
+iframe{width:100%;height:calc(100vh - 90px);border:1px solid var(--border);border-radius:12px;background:#fff}
+pre{white-space:pre-wrap;margin:0;font-size:12px;max-height:220px;overflow:auto}
+.hide{display:none}
+@media(max-width:760px){.app{grid-template-columns:1fr}nav{position:static;height:auto;flex-direction:row;overflow:auto;border-right:0;border-bottom:1px solid var(--border);padding:8px}nav h1,nav .sp,nav .svc,nav .grp{display:none}nav button{white-space:nowrap}main{padding:16px}}
+</style>
+</head>
+<body>
+<div class="app">
+<nav id="nav">
+  <h1>Agent Hub</h1>
+  <div class="grp">Workspace</div>
+  <button data-v="overview" class="on">Overview</button>
+  <div class="grp">Tools</div>
+  <button data-v="perf">Perf team</button>
+  <button data-v="qa">QA team</button>
+  <button data-v="csv">Pretty CSV</button>
+  <div class="grp">Insights</div>
+  <button data-v="estimate">Estimate</button>
+  <button data-v="spend">Spend</button>
+  <button data-v="reports">Reports</button>
+  <button data-v="history">Run history</button>
+  <div class="sp"></div>
+  <div class="svc" id="svc"></div>
+</nav>
+<main>
+  <div class="row" style="padding-bottom:4px">
+    <div><h2 id="title">Overview</h2><div class="mut small" id="sub">Pick a target, then run any tool</div></div>
+    <div class="row" id="targetbar">
+      <input type="text" id="target" list="targets" placeholder="/path/to/project or https://site">
+      <datalist id="targets"></datalist>
+      <select id="model" title="Model">
+        <option value="sonnet">Sonnet</option><option value="opus">Opus</option><option value="haiku">Haiku</option><option value="fable">Fable</option><option value="default">Claude default</option>
+      </select>
+      <select id="effort" title="Effort">
+        <option value="low">Low effort</option><option value="medium">Medium</option><option value="high">High</option><option value="xhigh">Extra high</option><option value="max">Max</option><option value="default">Default</option>
+      </select>
+      <button class="b" id="theme" title="Toggle theme" aria-label="Toggle theme">Theme: auto</button>
+      <button class="b pri" id="runall">Run all</button>
+    </div>
+  </div>
+  <div id="msg" class="small err"></div>
+
+  <section id="v-overview">
+    <div class="stats" id="stats" style="margin-bottom:16px"></div>
+    <div class="grid">
+      <div class="card"><div class="row"><b>Perf agent team</b><span class="pill" id="p-perf">idle</span></div>
+        <div class="mut small" style="margin-top:6px">Strategy PDF, k6 runs, results report</div>
+        <div class="mut small" id="d-perf" style="margin-top:8px">No runs yet</div>
+        <button class="b full" data-go="perf">Open</button></div>
+      <div class="card"><div class="row"><b>QA agent team</b><span class="pill" id="p-qa">idle</span></div>
+        <div class="mut small" style="margin-top:6px">Playwright, accessibility, Zephyr CSV</div>
+        <div class="mut small" id="d-qa" style="margin-top:8px">No runs yet</div>
+        <div class="bar hide" id="b-qa"><i></i></div>
+        <button class="b full" data-go="qa">Open</button></div>
+      <div class="card"><div class="row"><b>Pretty CSV</b><span class="pill done">ready</span></div>
+        <div class="mut small" style="margin-top:6px">View, sort and clean any CSV</div>
+        <div class="mut small" style="margin-top:8px">Opens in this page</div>
+        <button class="b full" data-go="csv">Open viewer</button></div>
+    </div>
+    <div class="card" style="margin-top:16px"><div class="row"><b>Run all</b><span class="pill idle" id="p-chain">idle</span></div>
+      <div class="mut small" style="margin-top:6px">Runs the Perf strategy first, then the full QA run, one after the other. Perf phase 2 always waits for your approval.</div>
+      <div id="chain" class="small" style="margin-top:8px"></div>
+      <button class="b hide" id="cancelchain" style="margin-top:8px">Cancel chain</button></div>
+    <div class="card" style="margin-top:16px"><div class="row"><b>Cost by tool</b><span class="mut small">From Claude Code run totals, USD</span></div>
+      <table id="costs" style="margin-top:6px"></table></div>
+    <div class="card" style="margin-top:16px"><b>Live activity</b><div id="activity" class="mono" style="margin-top:8px">Nothing running.</div></div>
+  </section>
+
+  <section id="v-perf" class="hide"></section>
+  <section id="v-qa" class="hide"></section>
+  <section id="v-csv" class="hide"><iframe id="csvf" title="Pretty CSV"></iframe></section>
+  <section id="v-estimate" class="hide"><div class="card"><div class="row"><span class="mut">Enter a website, a public GitHub repo URL or a local folder above, pick a model, then:</span><button class="b pri" id="est">Estimate cost</button></div><div id="estout" style="margin-top:12px"></div></div></section>
+  <section id="v-spend" class="hide"><div class="stats" id="spstats" style="margin-bottom:16px"></div><div class="card"><b>Spend by run</b><div class="mut small">Cost of each finished run, newest first</div><div id="spbars" style="margin-top:8px"></div></div></section>
+  <section id="v-reports" class="hide"><div class="card"><div id="reports">Loading…</div></div></section>
+  <section id="v-history" class="hide"><div class="card"><div id="history">Loading…</div></div></section>
+</main>
+</div>
+<script>
+const $ = (s) => document.querySelector(s);
+const H = { 'content-type': 'application/json', 'x-hub-ui': '1' };
+const api = async (m, p, b) => {
+  const r = await fetch(p, { method: m, headers: H, body: b ? JSON.stringify(b) : undefined });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(d.error || r.statusText);
+  return d;
+};
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const NAMES = { perf: 'Perf team', qa: 'QA team' };
+let view = 'overview', state = { perf: [], qa: [], detail: { perf: null, qa: null }, chain: {}, costs: { perf: [], qa: [] } };
+const msg = (t) => { $('#msg').textContent = t || ''; };
+
+function show(v) {
+  view = v;
+  document.querySelectorAll('nav button').forEach((b) => b.classList.toggle('on', b.dataset.v === v));
+  document.querySelectorAll('main > section').forEach((s) => s.classList.toggle('hide', s.id !== 'v-' + v));
+  $('#title').textContent = { overview: 'Overview', perf: 'Perf agent team', qa: 'QA agent team', csv: 'Pretty CSV', estimate: 'Cost estimate', spend: 'Spend', reports: 'Reports', history: 'Run history' }[v];
+  $('#sub').textContent = v === 'overview' ? 'Pick a target, then run any tool' : '';
+  $('#targetbar').classList.toggle('hide', v === 'csv');
+  $('#theme').classList.remove('hide');
+  if (v === 'csv' && !$('#csvf').src) $('#csvf').src = '/csv';
+  localStorage.setItem('hub.view', v);
+  render();
+}
+document.querySelectorAll('nav button').forEach((b) => b.onclick = () => show(b.dataset.v));
+document.querySelectorAll('[data-go]').forEach((b) => b.onclick = () => show(b.dataset.go));
+
+const target = () => $('#target').value.trim();
+$('#target').value = localStorage.getItem('hub.target') || '';
+$('#target').onchange = () => localStorage.setItem('hub.target', target());
+
+for (const k of ['model', 'effort']) {
+  $('#' + k).value = localStorage.getItem('hub.' + k) || (k === 'model' ? 'sonnet' : 'low');
+  $('#' + k).onchange = () => localStorage.setItem('hub.' + k, $('#' + k).value);
+}
+const opts = () => ({ model: $('#model').value, effort: $('#effort').value });
+const THEMES = ['auto', 'light', 'dark'];
+function applyTheme(t) {
+  if (t === 'auto') document.documentElement.removeAttribute('data-theme'); else document.documentElement.dataset.theme = t;
+  $('#theme').textContent = 'Theme: ' + t;
+  try { localStorage.setItem('hub.theme', t); } catch {}
+  const f = $('#csvf'); try { if (f.contentDocument) { t === 'auto' ? f.contentDocument.documentElement.removeAttribute('data-theme') : f.contentDocument.documentElement.setAttribute('data-theme', t); } } catch {}
+}
+$('#theme').onclick = () => applyTheme(THEMES[(THEMES.indexOf(localStorage.getItem('hub.theme') || 'auto') + 1) % 3]);
+applyTheme(localStorage.getItem('hub.theme') || 'auto');
+
+async function start(team, mode) {
+  msg('');
+  if (!target()) return msg('Enter a target first');
+  try { await api('POST', `/api/${team}/api/runs`, { target: target(), mode, ...opts() }); await poll(); } catch (e) { msg(e.message); }
+}
+$('#runall').onclick = async () => {
+  msg('');
+  if (!target()) return msg('Enter a target first');
+  try { await api('POST', '/api/chain', { target: target(), ...opts() }); await poll(); } catch (e) { msg(e.message); }
+};
+$('#cancelchain').onclick = () => api('POST', '/api/chain/cancel').then(poll).catch((e) => msg(e.message));
+
+const latest = (t) => state[t][0];
+const cardState = (r) => r ? (r.status === 'succeeded' && r.mode === 'strategy' && r.team === 'perf' ? 'approval' : r.status) : 'idle';
+
+function teamView(t) {
+  const el = $('#v-' + t), r = state.detail[t];
+  const runs = state[t];
+  const modes = t === 'perf' ? [['strategy', 'Start strategy']] : [['full', 'Start full run'], ['update', 'Start update run']];
+  let h = `<div class="row" style="margin-bottom:12px">${modes.map(([m, l]) => `<button class="b pri" data-start="${m}">${l}</button>`).join('')}</div>`;
+  if (r) {
+    h += `<div class="card"><div class="row"><b>${esc(r.target)}</b><span class="pill ${cardState({ ...r, team: t })}">${r.status === 'succeeded' && t === 'perf' && r.mode === 'strategy' ? 'awaiting approval' : r.status}</span></div>
+      <div class="mut small">${esc(r.mode)} · started ${new Date(r.startedAt).toLocaleString()} · cost ${usd(r.result && r.result.costUsd)}${r.result && r.result.durationMs ? ' · ' + dur(r.result.durationMs) : ''}</div>
+      <div style="margin-top:10px"><b class="small">Agents</b><table>${(r.agents || []).map((a) => `<tr><td>${esc(a.agent)}</td><td class="mut">${esc(a.description || '')}</td><td><span class="pill ${a.status}">${a.status}</span></td></tr>`).join('') || '<tr><td class="mut">No sub-agents yet</td></tr>'}</table></div>
+      ${r.error ? `<pre class="err" style="margin-top:8px">${esc(r.error)}</pre>` : ''}
+      ${r.lastMessage ? `<pre class="mut" style="margin-top:8px">${esc(r.lastMessage)}</pre>` : ''}
+      <div style="margin-top:10px"><b class="small">Reports</b>${reportList(t, r.id, r.reports)}</div>
+      <div class="row" style="margin-top:12px;justify-content:flex-start">
+        ${r.status === 'running' ? `<button class="b" data-cancel="${r.id}">Cancel run</button>` : ''}
+        ${t === 'perf' && r.mode === 'strategy' && r.status === 'succeeded' ? '<button class="b pri" data-approve>Approve strategy and run tests</button>' : ''}
+      </div></div>`;
+  } else h += '<div class="card mut">No runs yet. Enter a target above and start one.</div>';
+  h += `<div class="card" style="margin-top:12px"><b class="small">Earlier runs</b>${runTable(runs.slice(0, 8), t)}</div>`;
+  el.innerHTML = h;
+  el.querySelectorAll('[data-start]').forEach((b) => b.onclick = () => start(t, b.dataset.start));
+  el.querySelectorAll('[data-cancel]').forEach((b) => b.onclick = () => api('POST', `/api/${t}/api/runs/${b.dataset.cancel}/cancel`).then(poll).catch((e) => msg(e.message)));
+  el.querySelectorAll('[data-pick]').forEach((a) => a.onclick = (e) => { e.preventDefault(); pick(t, a.dataset.pick); });
+  const ap = el.querySelector('[data-approve]');
+  if (ap) ap.onclick = () => { if (confirm('Phase 2 builds k6 scripts and runs load tests against ' + r.target + '. Continue?')) start('perf', 'run'); };
+}
+const runTable = (runs, t) => `<table>${runs.map((x) => `<tr><td><a href="#" data-pick="${x.id}">${esc(x.id)}</a></td><td>${esc(x.target)}</td><td>${esc(x.mode)}</td><td><span class="pill ${x.status}">${x.status}</span></td></tr>`).join('') || '<tr><td class="mut">None</td></tr>'}</table>`;
+const reportList = (t, id, reps) => (reps && reps.length) ? '<table>' + reps.map((f) => `<tr><td>${esc(f.path)}</td><td class="mut">${Math.round(f.bytes / 1024)} KB</td><td><a href="/api/${t}/api/runs/${id}/file?path=${encodeURIComponent(f.path)}" target="_blank">Open</a> · <a href="/api/${t}/api/runs/${id}/file?path=${encodeURIComponent(f.path)}&download=1">Download</a></td></tr>`).join('') + '</table>' : '<div class="mut small">None yet</div>';
+async function pick(t, id) { state.detail[t] = await api('GET', `/api/${t}/api/runs/${id}`); render(); }
+
+function render() {
+  const [lp, lq] = [latest('perf'), latest('qa')];
+  const cs = { perf: lp ? (lp.mode === 'strategy' && lp.status === 'succeeded' ? 'approval' : lp.status) : 'idle', qa: lq ? lq.status : 'idle' };
+  for (const t of ['perf', 'qa']) {
+    const l = latest(t), p = $('#p-' + t);
+    p.className = 'pill ' + cs[t]; p.textContent = cs[t] === 'approval' ? 'awaiting approval' : cs[t];
+    $('#d-' + t).textContent = l ? `${l.target} · ${l.mode} · ${new Date(l.startedAt).toLocaleString()}` : 'No runs yet';
+  }
+  const bq = $('#b-qa'), qd = state.detail.qa;
+  bq.classList.toggle('hide', !(lq && lq.status === 'running' && qd && qd.agents && qd.agents.length));
+  if (qd && qd.agents && qd.agents.length) bq.firstElementChild.style.width = Math.round(100 * qd.agents.filter((a) => a.status !== 'running').length / qd.agents.length) + '%';
+  const c = state.chain;
+  $('#p-chain').className = 'pill ' + (c.state || 'idle'); $('#p-chain').textContent = c.state || 'idle';
+  $('#chain').innerHTML = (c.steps || []).map((s) => `${esc(s.label)} <span class="pill ${s.status}">${s.status}</span>`).join(' &rarr; ') + (c.error ? `<div class="err">${esc(c.error)}</div>` : '');
+  $('#cancelchain').classList.toggle('hide', c.state !== 'running');
+  const act = [];
+  for (const t of ['perf', 'qa']) { const d = state.detail[t]; if (d && d.status === 'running') (d.agents || []).filter((a) => a.status === 'running').forEach((a) => act.push(`${t} · ${a.agent} · ${a.description || 'working…'}`)); if (d && d.status === 'running' && !(d.agents || []).length) act.push(`${t} · lead agent working…`); }
+  $('#activity').innerHTML = act.length ? act.map(esc).join('<br>') : 'Nothing running.';
+  if (view === 'perf' || view === 'qa') teamView(view);
+  renderCosts(); renderStats();
+  if (view === 'reports') renderReports();
+  if (view === 'history') renderHistory();
+}
+function renderReports() {
+  let h = '';
+  for (const t of ['perf', 'qa']) { const d = state.detail[t]; h += `<b>${NAMES[t]}</b>${d ? reportList(t, d.id, d.reports) : '<div class="mut small">No runs yet</div>'}<div style="height:12px"></div>`; }
+  $('#reports').innerHTML = h;
+}
+const usd = (n) => n == null ? '<span class="mut">n/a</span>' : '$' + n.toFixed(2);
+const dur = (ms) => ms == null ? '' : ms >= 60000 ? Math.round(ms / 60000) + ' min' : Math.round(ms / 1000) + ' s';
+function renderCosts() {
+  const rows = ['perf', 'qa'].map((t) => { const r = state.costs[t] || []; const paid = r.filter((x) => x.costUsd != null); const sum = paid.reduce((a, x) => a + x.costUsd, 0); const last = r[0]; return `<tr><td>${NAMES[t]}</td><td>${r.length} runs</td><td>${usd(last && last.costUsd)} <span class="mut small">last run</span></td><td>${usd(paid.length ? sum / paid.length : null)} <span class="mut small">avg</span></td><td><b>${usd(sum)}</b> <span class="mut small">total</span></td></tr>`; });
+  $('#costs').innerHTML = rows.join('');
+}
+function renderStats() {
+  const all = [...state.costs.perf.map((r) => ({ ...r, t: 'perf' })), ...state.costs.qa.map((r) => ({ ...r, t: 'qa' }))].sort((a, b) => b.startedAt.localeCompare(a.startedAt));
+  const paid = all.filter((x) => x.costUsd != null), sum = paid.reduce((a, x) => a + x.costUsd, 0);
+  const tile = (n, l) => `<div class="card stat"><div class="n">${n}</div><div class="l">${l}</div></div>`;
+  const tiles = tile('$' + sum.toFixed(2), 'Total spend') + tile(all.length, 'Runs') + tile(paid.length ? '$' + (sum / paid.length).toFixed(2) : 'n/a', 'Average per run') + tile(all.filter((x) => x.status === 'running').length, 'Running now');
+  $('#stats').innerHTML = tiles; $('#spstats').innerHTML = tiles;
+  const max = Math.max(0.01, ...paid.map((x) => x.costUsd));
+  $('#spbars').innerHTML = '<table>' + (paid.slice(0, 40).map((x) => `<tr><td style="width:90px">${x.t === 'perf' ? 'Perf' : 'QA'}</td><td>${esc(x.target)}<div class="mut small">${esc(x.mode)} · ${new Date(x.startedAt).toLocaleDateString()}</div></td><td style="width:40%"><div class="sbar"><i style="width:${Math.round(100 * x.costUsd / max)}%"></i></div></td><td style="width:70px;text-align:right"><b>$${x.costUsd.toFixed(2)}</b></td></tr>`).join('') || '<tr><td class="mut">No costed runs yet</td></tr>') + '</table>';
+}
+function renderHistory() {
+  const all = [...state.costs.perf.map((r) => ({ ...r, t: 'perf' })), ...state.costs.qa.map((r) => ({ ...r, t: 'qa' }))].sort((a, b) => b.startedAt.localeCompare(a.startedAt));
+  $('#history').innerHTML = '<table><tr><th>Team</th><th>Run</th><th>Target</th><th>Mode</th><th>Status</th><th>Cost</th><th>Time</th><th>Model</th><th>Started</th></tr>' + all.map((x) => `<tr><td>${x.t}</td><td class="mono">${esc(x.id)}</td><td>${esc(x.target)}</td><td>${esc(x.mode)}</td><td><span class="pill ${x.status}">${x.status}</span></td><td>${usd(x.costUsd)}</td><td class="mut">${dur(x.durationMs)}</td><td class="mut">${esc(x.model || '')} ${esc(x.effort || '')}</td><td class="mut">${new Date(x.startedAt).toLocaleString()}</td></tr>`).join('') + '</table>';
+}
+
+$('#est').onclick = async () => {
+  msg(''); if (!target()) return msg('Enter a target first');
+  $('#estout').textContent = 'Measuring target…';
+  try {
+    const e = await api('POST', '/api/estimate', { target: target(), ...opts() });
+    const m = e.measured, size = m.pages ? `${m.pages} pages found` : `${m.files} source files, ${m.kb} KB`;
+    const row = (l, r, note) => `<tr><td>${l}<div class="mut small">${note}</div></td><td>$${r.low.toFixed(2)}</td><td><b>$${r.mid.toFixed(2)}</b></td><td>$${r.high.toFixed(2)}</td></tr>`;
+    $('#estout').innerHTML = `<div class="mut small">${esc(m.kind)} · ${size} · about ${e.areas} feature areas · ${esc(e.model)} · ${esc(e.effort)} effort</div>
+      <table style="margin-top:8px"><tr><th>Run</th><th>Low</th><th>Expected</th><th>High</th></tr>
+      ${row('QA agent team', e.qa, 'Full run: tests, reports, Zephyr CSV')}
+      ${row('Perf strategy', e.perfStrategy, 'Phase 1: analysis and strategy PDF')}
+      ${row('Perf build and run', e.perfRun, 'Phase 2, after you approve')}
+      <tr><td><b>All three</b></td><td>$${e.total.low.toFixed(2)}</td><td><b>$${e.total.mid.toFixed(2)}</b></td><td>$${e.total.high.toFixed(2)}</td></tr></table>
+      <div class="mut small" style="margin-top:10px">${esc(e.basis)}<br>${e.notes.map(esc).join('<br>')}</div>`;
+  } catch (err) { $('#estout').innerHTML = ''; msg(err.message); }
+};
+async function poll() {
+  try {
+    const [perf, qa, chain, health, costs] = await Promise.all([api('GET', '/api/perf/api/runs'), api('GET', '/api/qa/api/runs'), api('GET', '/api/chain'), api('GET', '/api/health'), api('GET', '/api/costs')]);
+    Object.assign(state, { perf, qa, chain, costs });
+    for (const t of ['perf', 'qa']) {
+      const id = state.detail[t]?.id && state[t].some((r) => r.id === state.detail[t].id) ? state.detail[t].id : state[t][0]?.id;
+      state.detail[t] = id ? await api('GET', `/api/${t}/api/runs/${id}`) : null;
+    }
+    $('#svc').textContent = `Perf server ${health.perf ? 'up' : 'down'} · QA server ${health.qa ? 'up' : 'down'}`;
+    $('#targets').innerHTML = [...new Set([...perf, ...qa].map((r) => r.target))].map((t) => `<option value="${esc(t)}">`).join('');
+  } catch (e) { msg(e.message); }
+  render();
+}
+show(localStorage.getItem('hub.view') || 'overview');
+poll(); setInterval(poll, 4000);
+</script>
+</body>
+</html>
