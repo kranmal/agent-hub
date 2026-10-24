@@ -201,7 +201,6 @@ function applyTheme(t) {
 $('#theme').onclick = () => applyTheme(THEMES[(THEMES.indexOf(localStorage.getItem('hub.theme') || 'auto') + 1) % 3]);
 applyTheme(localStorage.getItem('hub.theme') || 'auto');
 
-let pwOn = false;
 async function start(team, mode) {
   msg('');
   if (!target()) return needTarget();
@@ -209,7 +208,7 @@ async function start(team, mode) {
   busy = { team, mode, target: target() };
   note(`Starting ${NAME_LONG[team]} ${MODE_LONG[mode] || mode} on ${busy.target}. The lead agent is getting ready, this can take a few seconds.`);
   show(team); render();
-  try { await api('POST', `/api/${team}/api/runs`, { target: busy.target, mode, ...opts(), ...(team === 'qa' ? { playwrightAgents: pwOn } : {}) }); fastUntil = Date.now() + 30000; msg(''); }
+  try { await api('POST', `/api/${team}/api/runs`, { target: busy.target, mode, ...opts() }); fastUntil = Date.now() + 30000; msg(''); }
   catch (e) { msg(e.message); }
   busy = null; await poll();
 }
@@ -247,7 +246,7 @@ function teamView(t) {
   const el = $('#v-' + t), r = state.detail[t];
   const runs = state[t];
   const modes = t === 'perf' ? [['strategy', 'Start strategy']] : [['full', 'Start full run'], ['update', 'Start update run']];
-  let h = `<div class="row" style="margin-bottom:12px">${modes.map(([m, l]) => { const me = busy && busy.team === t && busy.mode === m; return `<button class="b pri" data-start="${m}"${busy ? ' disabled' : ''}>${me ? '<span class="spin"></span> Starting…' : l}</button>`; }).join('')}${t === 'qa' ? `<label class="small" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="pwagents"${pwOn ? ' checked' : ''}> Use Playwright agents (slower, costs more)</label>` : ''}</div>`;
+  let h = `<div class="row" style="margin-bottom:12px">${modes.map(([m, l]) => { const me = busy && busy.team === t && busy.mode === m; return `<button class="b pri" data-start="${m}"${busy ? ' disabled' : ''}>${me ? '<span class="spin"></span> Starting…' : l}</button>`; }).join('')}</div>`;
   if (busy && busy.team === t) h += `<div class="card starting" style="margin-bottom:12px"><span class="spin"></span><span>Starting ${NAME_LONG[t]} ${MODE_LONG[busy.mode] || busy.mode} on ${esc(busy.target)}…</span></div>`;
   if (r) {
     h += `<div class="card"><div class="row"><b>${esc(r.target)}</b><span class="pill ${cardState({ ...r, team: t })}">${r.status === 'succeeded' && t === 'perf' && r.mode === 'strategy' ? 'awaiting approval' : r.status}</span></div>
@@ -264,7 +263,6 @@ function teamView(t) {
   h += `<div class="card" style="margin-top:12px"><b class="small">Earlier runs</b>${runTable(runs.slice(0, 8), t)}</div>`;
   el.innerHTML = h;
   el.querySelectorAll('[data-start]').forEach((b) => b.onclick = () => start(t, b.dataset.start));
-  const pwc = el.querySelector('#pwagents'); if (pwc) pwc.onchange = () => { pwOn = pwc.checked; };
   el.querySelectorAll('[data-cancel]').forEach((b) => b.onclick = () => api('POST', `/api/${t}/api/runs/${b.dataset.cancel}/cancel`).then(poll).catch((e) => msg(e.message)));
   el.querySelectorAll('[data-pick]').forEach((a) => a.onclick = (e) => { e.preventDefault(); pick(t, a.dataset.pick); });
   const ap = el.querySelector('[data-approve]');

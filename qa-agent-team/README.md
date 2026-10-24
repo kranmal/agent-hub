@@ -79,29 +79,6 @@ It finds what is new, writes only the missing tests, and updates the reports. Th
 
 ---
 
-## Playwright agents mode (optional)
-
-Playwright ships three agents of its own ([docs](https://playwright.dev/docs/test-agents)): a **planner** that explores the app and writes a plan in `qa/specs/`, a **generator** that turns the plan into tests, and a **healer** that repairs failing tests. This team can use them on top of the normal flow. Our rules still apply: requirement ids, boundary and error tests, `qa.step` screenshots, the coverage gate, the PDFs and the Zephyr CSV.
-
-| Step | Who | What changes |
-|---|---|---|
-| Plan | `playwright-test-planner` | Explores each feature area in a real browser and saves `qa/specs/<area>.md` |
-| Generate | `playwright-test-generator` | Writes draft tests from the plan; the spec writer then converts them to this suite's conventions |
-| Heal | `playwright-test-healer` | Fixes test bugs the runner could not; a test it marks `fixme` is treated as a defect candidate |
-
-**From the hub:** tick **Use Playwright agents** next to the QA start buttons. The hub scaffolds `qa/` first, because the Playwright MCP server needs it when the session starts.
-
-**From the terminal:**
-
-```bash
-./install.sh --force       # adds the three agents, the MCP config and the prepare script
-cd /path/to/your/project
-node ~/.claude/qa-prepare.mjs .
-BASE_URL=https://your-site.com claude --agent qa-lead --mcp-config ~/.claude/qa-playwright-mcp.json
-```
-
-It is slower and costs more than the normal flow, because the agents drive a live browser one scenario at a time. The three agent files are copied from `npx playwright init-agents --loop=claude` (Playwright 1.64). Regenerate them when you update Playwright.
-
 ## Use it from Claude desktop
 
 The `interface/` folder has an MCP server and a live dashboard, so you can start and follow runs from Claude desktop chat. See [interface/README.md](interface/README.md).
