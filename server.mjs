@@ -6,7 +6,7 @@
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
-import { spawn } from 'node:child_process';
+import { spawn, execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -174,6 +174,38 @@ async function estimate({ target, model = 'sonnet', effort = 'low' }) {
 // ---------- HTTP ----------
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript' };
 
+// ---------- Stop all / Reset ----------
+// Stop: cancel the Run all chain and every running run on both teams.
+async function stopAll() {
+  chain.cancelled = true;
+  let stopped = 0;
+  for (const name of Object.keys(TEAMS)) {
+    let runs = [];
+    try { runs = await team(name, 'GET', '/api/runs'); } catch { continue; }
+    for (const r of runs.filter((x) => x.status === 'running')) {
+      try { await team(name, 'POST', `/api/runs/${r.id}/cancel`); stopped++; } catch {}
+    }
+  }
+  return stopped;
+}
+// Reset: stop everything, clear the chain, restart both team servers, then restart the hub itself.
+async function resetAll() {
+  const stopped = await stopAll();
+  await sleep(500);
+  Object.assign(chain, { state: 'idle', steps: [], error: null, cancelled: false });
+  for (const t of Object.values(TEAMS)) {
+    try { for (const pid of execFileSync('lsof', ['-ti', `tcp:${t.port}`, '-sTCP:LISTEN']).toString().split(/\s+/).filter(Boolean)) process.kill(Number(pid)); } catch {}
+  }
+  await sleep(500);
+  await ensureTeams();
+  return stopped;
+}
+function restartHub(server) {
+  // A detached shell waits for this process to free the port, then starts a fresh hub.
+  spawn('sh', ['-c', 'sleep 1; exec "$0" "$@"', process.execPath, path.join(HERE, 'server.mjs')], { detached: true, stdio: 'ignore', env: process.env }).unref();
+  server.close(); setTimeout(() => process.exit(0), 300);
+}
+
 async function handle(req, res) {
   const host = (req.headers.host || '').split(':')[0];
   if (host !== '127.0.0.1' && host !== 'localhost') return json(res, 403, { error: 'bad host' });
@@ -209,6 +241,12 @@ async function handle(req, res) {
       if (!b.target) return json(res, 400, { error: 'target is required' });
       try { return json(res, 200, await estimate(b)); } catch (e) { return json(res, 422, { error: e.message }); }
     }
+    if (p === '/api/stop') return json(res, 200, { stopped: await stopAll() });
+    if (p === '/api/reset') {
+      const stopped = await resetAll();
+      json(res, 200, { stopped, restarting: true });
+      return restartHub(hubServer);
+    }
     if (p === '/api/chain/cancel') {
       chain.cancelled = true;
       const active = chain.steps.find((s) => s.status === 'running');
@@ -237,7 +275,8 @@ async function handle(req, res) {
   json(res, 404, { error: 'not found' });
 }
 
-http.createServer((req, res) => handle(req, res).catch((e) => json(res, 500, { error: e.message })))
+const hubServer = http.createServer((req, res) => handle(req, res).catch((e) => json(res, 500, { error: e.message })));
+hubServer
   .listen(PORT, '127.0.0.1', async () => {
     console.log(`Agent Hub: http://127.0.0.1:${PORT}`);
     await ensureTeams();

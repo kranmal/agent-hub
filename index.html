@@ -106,6 +106,8 @@ pre{white-space:pre-wrap;margin:0;font-size:12px;max-height:220px;overflow:auto}
       </select>
       <button class="b" id="theme" title="Toggle theme" aria-label="Toggle theme">Theme: auto</button>
       <button class="b pri" id="runall">Run all</button>
+      <button class="b" id="stopall" title="Cancel every running run and the Run all chain" disabled>Stop all</button>
+      <button class="b" id="resetsrv" title="Stop everything and restart the hub and both team servers">Reset server</button>
     </div>
   </div>
   <div id="msg" class="small err"></div>
@@ -221,6 +223,21 @@ $('#runall').onclick = async () => {
   try { await api('POST', '/api/chain', { target: busy.target, ...opts() }); fastUntil = Date.now() + 30000; msg(''); } catch (e) { msg(e.message); }
   busy = null; $('#runall').disabled = false; $('#runall').textContent = 'Run all'; await poll();
 };
+$('#stopall').onclick = async () => {
+  if (!confirm('Stop every running run?')) return;
+  try { const r = await api('POST', '/api/stop'); msg(''); note(`Stopped ${r.stopped} run${r.stopped === 1 ? '' : 's'}.`); } catch (e) { msg(e.message); }
+  poll();
+};
+$('#resetsrv').onclick = async () => {
+  if (!confirm('Reset the server? This stops all running runs, then restarts the hub and both team servers. Reports and history are kept.')) return;
+  note('Resetting: stopping runs and restarting the servers...');
+  try { await api('POST', '/api/reset'); } catch (e) { /* the hub may drop the connection while it restarts */ }
+  for (let i = 0; i < 30; i++) {
+    await new Promise((r) => setTimeout(r, 1000));
+    try { const h = await fetch('/api/health'); if (h.ok) { location.reload(); return; } } catch {}
+  }
+  msg('The server did not come back. Start it again with: node server.mjs');
+};
 $('#cancelchain').onclick = () => api('POST', '/api/chain/cancel').then(poll).catch((e) => msg(e.message));
 
 const latest = (t) => state[t][0];
@@ -286,6 +303,7 @@ function render() {
   $('#p-chain').className = 'pill ' + (c.state || 'idle'); $('#p-chain').textContent = c.state || 'idle';
   $('#chain').innerHTML = (c.steps || []).map((s) => `${esc(s.label)} <span class="pill ${s.status}">${s.status}</span>`).join(' &rarr; ') + (c.error ? `<div class="err">${esc(c.error)}</div>` : '');
   $('#cancelchain').classList.toggle('hide', c.state !== 'running');
+  $('#stopall').disabled = !(c.state === 'running' || ['perf', 'qa'].some((t) => (state[t] || []).some((r) => r.status === 'running')));
   const act = [];
   for (const t of ['perf', 'qa']) { const d = state.detail[t]; if (d && d.status === 'running') (d.agents || []).filter((a) => a.status === 'running').forEach((a) => act.push(`${t} · ${a.agent} · ${a.description || 'working…'}`)); if (d && d.status === 'running' && !(d.agents || []).length) act.push(`${t} · lead agent working…`); }
   $('#activity').innerHTML = act.length ? act.map(esc).join('<br>') : 'Nothing running.';

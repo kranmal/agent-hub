@@ -45,6 +45,11 @@ The QA and Performance teams used to live in their own repos (`kranmal/qa-agent-
 | `HUB_PERF_DIR` | `./perf-agent-team` |
 | `QA_UI_PORT` / `PERF_UI_PORT` | `4747` / `4748` |
 
+## Stop and reset
+
+- **Stop all** (top right) cancels every running run on both teams, and the Run all chain. It is greyed out when nothing is running. A single run can still be cancelled from its team page.
+- **Reset server** stops everything, then restarts the hub and both team servers (picking up any code you have pulled) and reloads the page. Reports and history are kept. Both buttons ask you to confirm first.
+
 ## Safety
 
 Listens on 127.0.0.1 only, rejects other Host/Origin headers and requires a custom header on every POST. Runs are headless, so the agents can run shell commands in the target project without asking: only point it at projects where that is acceptable. Perf phase 2 always needs your approval.
