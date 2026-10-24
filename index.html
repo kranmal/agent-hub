@@ -41,6 +41,8 @@ button.b,select,input{font:inherit;color:var(--text);background:var(--surface);b
 button.b{cursor:pointer}
 button.b:hover{background:var(--surface2)}
 button.b.pri{background:var(--accent);color:#fff;border-color:var(--accent)}button.b.pri:hover{filter:brightness(1.08);background:var(--accent)}
+button.b.open{background:var(--accent-bg);color:var(--accent);border-color:var(--accent)}button.b.open:hover{background:var(--accent-bg);filter:brightness(.95)}
+button.b.dl{background:var(--ok-bg);color:var(--ok);border-color:var(--ok)}button.b.dl:hover{background:var(--ok-bg);filter:brightness(.95)}
 button.b.sm{padding:4px 10px;font-size:12px}
 button.b.full{width:100%;margin-top:10px}
 input[type=text]{min-width:260px}
@@ -50,7 +52,7 @@ table{width:100%;border-collapse:collapse}
 h4{margin:14px 0 4px;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--mut)}
 .rgroup:first-child h4{margin-top:6px}
 .rgroup table{table-layout:fixed}
-.rgroup td:nth-child(2){width:72px}
+.rgroup td:nth-child(2){width:96px;white-space:nowrap}
 .rgroup td:nth-child(3){width:170px;text-align:right;white-space:nowrap}
 .rgroup td:first-child{overflow-wrap:anywhere}
 td,th{text-align:left;padding:7px 8px;border-bottom:1px solid var(--border);font-size:13px}
@@ -231,7 +233,7 @@ document.addEventListener('click', (e) => {
   else location.href = b.dataset.dl;
 });
 const REPORT_TYPES = [['.pdf', 'PDF'], ['.json', 'JSON'], ['.csv', 'CSV'], ['.md', 'Markdown']];
-const reportRow = (t, id, f) => { const q = encodeURIComponent(f.path); return `<tr><td>${esc(f.path)}</td><td class="mut">${Math.round(f.bytes / 1024)} KB</td><td><button class="b sm" data-open="/api/${t}/api/runs/${id}/file?path=${q}">Open</button> <button class="b sm" data-dl="/api/${t}/api/runs/${id}/file?path=${q}&download=1">Download</button></td></tr>`; };
+const reportRow = (t, id, f) => { const q = encodeURIComponent(f.path); return `<tr><td>${esc(f.path)}</td><td class="mut">${Math.round(f.bytes / 1024)} KB</td><td><button class="b sm open" data-open="/api/${t}/api/runs/${id}/file?path=${q}">Open</button> <button class="b sm dl" data-dl="/api/${t}/api/runs/${id}/file?path=${q}&download=1">Download</button></td></tr>`; };
 const reportList = (t, id, reps) => {
   if (!reps || !reps.length) return '<div class="mut small">None yet</div>';
   const ext = (f) => (f.path.match(/\.[^./]+$/) || [''])[0].toLowerCase();
