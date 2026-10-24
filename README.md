@@ -46,3 +46,7 @@ Listens on 127.0.0.1 only, rejects other Host/Origin headers and requires a cust
 | `docs/Agent-Hub-User-Guide.docx` | Merged user guide (rebuild: `node docs/build-guide.js`, needs the `docx` npm package) |
 | `docs/make-diagrams.py` | Draws the guide diagrams (needs Pillow) |
 | `docs/source-guides/` | The original PrettyCSV and QA guides it was merged from |
+
+## Licence
+
+MIT, see [LICENSE](LICENSE).
