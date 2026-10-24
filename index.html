@@ -46,6 +46,12 @@ input[type=text]{min-width:260px}
 .bar{height:6px;border-radius:3px;background:var(--surface2);overflow:hidden;margin-top:10px}
 .bar i{display:block;height:100%;background:var(--accent)}
 table{width:100%;border-collapse:collapse}
+h4{margin:14px 0 4px;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--mut)}
+.rgroup:first-child h4{margin-top:6px}
+.rgroup table{table-layout:fixed}
+.rgroup td:nth-child(2){width:72px}
+.rgroup td:nth-child(3){width:150px;white-space:nowrap}
+.rgroup td:first-child{overflow-wrap:anywhere}
 td,th{text-align:left;padding:7px 8px;border-bottom:1px solid var(--border);font-size:13px}
 th{color:var(--mut);font-weight:500;font-size:12px}
 a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
@@ -217,7 +223,15 @@ function teamView(t) {
   if (ap) ap.onclick = () => { if (confirm('Phase 2 builds k6 scripts and runs load tests against ' + r.target + '. Continue?')) start('perf', 'run'); };
 }
 const runTable = (runs, t) => `<table>${runs.map((x) => `<tr><td><a href="#" data-pick="${x.id}">${esc(x.id)}</a></td><td>${esc(x.target)}</td><td>${esc(x.mode)}</td><td><span class="pill ${x.status}">${x.status}</span></td></tr>`).join('') || '<tr><td class="mut">None</td></tr>'}</table>`;
-const reportList = (t, id, reps) => (reps && reps.length) ? '<table>' + reps.map((f) => `<tr><td>${esc(f.path)}</td><td class="mut">${Math.round(f.bytes / 1024)} KB</td><td><a href="/api/${t}/api/runs/${id}/file?path=${encodeURIComponent(f.path)}" target="_blank">Open</a> · <a href="/api/${t}/api/runs/${id}/file?path=${encodeURIComponent(f.path)}&download=1">Download</a></td></tr>`).join('') + '</table>' : '<div class="mut small">None yet</div>';
+const REPORT_TYPES = [['.pdf', 'PDF'], ['.json', 'JSON'], ['.csv', 'CSV'], ['.md', 'Markdown']];
+const reportRow = (t, id, f) => { const q = encodeURIComponent(f.path); return `<tr><td>${esc(f.path)}</td><td class="mut">${Math.round(f.bytes / 1024)} KB</td><td><a href="/api/${t}/api/runs/${id}/file?path=${q}" target="_blank">Open</a> · <a href="/api/${t}/api/runs/${id}/file?path=${q}&download=1">Download</a></td></tr>`; };
+const reportList = (t, id, reps) => {
+  if (!reps || !reps.length) return '<div class="mut small">None yet</div>';
+  const ext = (f) => (f.path.match(/\.[^./]+$/) || [''])[0].toLowerCase();
+  const known = REPORT_TYPES.map((x) => x[0]);
+  const groups = [...REPORT_TYPES, ['', 'Other']].map(([e, label]) => [label, reps.filter((f) => e ? ext(f) === e : !known.includes(ext(f)))]).filter((g) => g[1].length);
+  return groups.map(([label, fs]) => `<div class="rgroup"><h4>${label} <span class="mut">(${fs.length})</span></h4><table>${fs.map((f) => reportRow(t, id, f)).join('')}</table></div>`).join('');
+};
 async function pick(t, id) { state.detail[t] = await api('GET', `/api/${t}/api/runs/${id}`); render(); }
 
 function render() {
