@@ -41,6 +41,8 @@ button.b,select,input{font:inherit;color:var(--text);background:var(--surface);b
 button.b{cursor:pointer}
 button.b:hover{background:var(--surface2)}
 button.b.pri{background:var(--accent);color:#fff;border-color:var(--accent)}button.b.pri:hover{filter:brightness(1.08);background:var(--accent)}
+button.b.danger{background:var(--bad-bg);color:var(--bad);border-color:var(--bad)}button.b.danger:hover{background:var(--bad-bg);filter:brightness(.95)}button.b.dangerfill{background:var(--bad);color:#fff;border-color:var(--bad)}
+dialog.confirm{border:1px solid var(--bad);border-radius:12px;background:var(--surface);color:var(--text);max-width:440px;padding:20px}dialog.confirm::backdrop{background:rgba(0,0,0,.5)}dialog.confirm h3{margin:0 0 8px;color:var(--bad)}dialog.confirm ul{margin:8px 0;padding-left:20px}
 button.b.open{background:var(--accent-bg);color:var(--accent);border-color:var(--accent)}button.b.open:hover{background:var(--accent-bg);filter:brightness(.95)}
 button.b.dl{background:var(--ok-bg);color:var(--ok);border-color:var(--ok)}button.b.dl:hover{background:var(--ok-bg);filter:brightness(.95)}
 button.b.sm{padding:4px 10px;font-size:12px}
@@ -261,12 +263,37 @@ function teamView(t) {
       </div></div>`;
   } else h += '<div class="card mut">No runs yet. Enter a target above and start one.</div>';
   h += `<div class="card" style="margin-top:12px"><b class="small">Earlier runs</b>${runTable(runs.slice(0, 8), t)}</div>`;
+  h += `<div class="row" style="margin-top:12px;justify-content:flex-end"><button class="b danger" data-clear title="Delete all ${NAMES[t]} run history and workspaces">Clear everything…</button></div>`;
   el.innerHTML = h;
   el.querySelectorAll('[data-start]').forEach((b) => b.onclick = () => start(t, b.dataset.start));
   el.querySelectorAll('[data-cancel]').forEach((b) => b.onclick = () => api('POST', `/api/${t}/api/runs/${b.dataset.cancel}/cancel`).then(poll).catch((e) => msg(e.message)));
+  el.querySelector('[data-clear]').onclick = () => clearDown(t);
   el.querySelectorAll('[data-pick]').forEach((a) => a.onclick = (e) => { e.preventDefault(); pick(t, a.dataset.pick); });
   const ap = el.querySelector('[data-approve]');
   if (ap) ap.onclick = () => { if (confirm('Phase 2 builds k6 scripts and runs load tests against ' + r.target + '. Continue?')) start('perf', 'run'); };
+}
+function clearDown(t) {
+  const d = document.createElement('dialog');
+  d.className = 'confirm';
+  d.innerHTML = `<h3>Clear everything for ${esc(NAMES[t])}?</h3>
+    <p><b>Warning: this cannot be undone.</b> It will permanently delete:</p>
+    <ul><li>all run history, progress logs and cost records for ${esc(NAMES[t])}</li><li>workspaces and reports created for website (URL) targets</li></ul>
+    <p class="mut small">Your own project folders are never touched. Reports saved inside a project folder stay where they are. A run in progress blocks this.</p>
+    <p><b>Are you sure?</b></p>
+    <div class="row" style="justify-content:flex-end;gap:8px"><button class="b" data-no autofocus>No, keep it</button><button class="b dangerfill" data-yes>Yes, clear everything</button></div>`;
+  document.body.appendChild(d);
+  const close = () => { d.close(); d.remove(); };
+  d.addEventListener('cancel', () => d.remove());
+  d.querySelector('[data-no]').onclick = close;
+  d.querySelector('[data-yes]').onclick = async () => {
+    close();
+    try {
+      const r = await api('POST', `/api/${t}/api/clear`, {});
+      state.detail[t] = null; msg(''); note(`Cleared ${r.runs} run${r.runs === 1 ? '' : 's'} and ${r.workspaces} workspace${r.workspaces === 1 ? '' : 's'} for ${NAMES[t]}.`);
+      poll();
+    } catch (e) { msg(e.message); }
+  };
+  d.showModal();
 }
 const runTable = (runs, t) => `<table>${runs.map((x) => `<tr><td><a href="#" data-pick="${x.id}">${esc(x.id)}</a></td><td>${esc(x.target)}</td><td>${esc(x.mode)}</td><td><span class="pill ${x.status}">${x.status}</span></td></tr>`).join('') || '<tr><td class="mut">None</td></tr>'}</table>`;
 document.addEventListener('click', (e) => {

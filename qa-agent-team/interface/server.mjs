@@ -271,6 +271,19 @@ function cancelRun(id) {
   return summarise(id);
 }
 
+// Deletes this tool's own records only: run history and the workspaces it made for URL targets.
+// Never touches a project folder you pointed it at, and refuses while a run is active.
+function clearAll() {
+  const ids = fs.readdirSync(RUNS_DIR);
+  if (ids.some((id) => { const m = readJson(path.join(runDir(id), 'run.json')); return m && !m.cancelled && !fs.existsSync(path.join(runDir(id), 'exit')) && m.pid && alive(m.pid); })) {
+    throw Object.assign(new Error('A run is still in progress. Cancel it first, then clear.'), { status: 409 });
+  }
+  const spaces = fs.readdirSync(WORK_DIR);
+  for (const id of ids) fs.rmSync(runDir(id), { recursive: true, force: true });
+  for (const w of spaces) fs.rmSync(path.join(WORK_DIR, w), { recursive: true, force: true });
+  return { runs: ids.length, workspaces: spaces.length };
+}
+
 // ---------- reports ----------
 const REPORT_DIRS = ['reports', 'manual', 'coverage', 'bugs'];
 const REPORT_EXT = new Set(['.pdf', '.csv', '.md', '.json']);
@@ -393,6 +406,9 @@ function handleHttp(req, res) {
     }
     if ((m = p.match(/^\/api\/runs\/([\w-]+)\/cancel$/))) {
       try { return json(res, 200, cancelRun(m[1])); } catch (e) { return json(res, 404, { error: e.message }); }
+    }
+    if (p === '/api/clear') {
+      try { return json(res, 200, clearAll()); } catch (e) { return json(res, e.status || 500, { error: e.message }); }
     }
   }
   json(res, 404, { error: 'not found' });
