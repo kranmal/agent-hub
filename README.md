@@ -49,6 +49,7 @@ The QA and Performance teams used to live in their own repos (`kranmal/qa-agent-
 
 - **Stop all** (top right) cancels every running run on both teams, and the Run all chain. It is greyed out when nothing is running. A single run can still be cancelled from its team page.
 - **Reset server** stops everything, then restarts the hub and both team servers (picking up any code you have pulled) and reloads the page. Reports and history are kept. Both buttons ask you to confirm first.
+- **Clear everything…** (bottom of the Perf team and QA team pages) permanently deletes that team's run history, cost records, and the workspaces made for website targets. A warning dialog asks "Are you sure?" first, and it is blocked while a run is in progress. Your own project folders, and reports saved inside them, are never touched.
 
 ## Safety
 
