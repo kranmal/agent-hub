@@ -162,7 +162,8 @@ const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<
 const NAMES = { perf: 'Perf team', qa: 'QA team' };
 let view = 'overview', state = { perf: [], qa: [], detail: { perf: null, qa: null }, chain: {}, costs: { perf: [], qa: [] } };
 const msg = (t) => { const m = $('#msg'); m.className = 'small err'; m.textContent = t || ''; };
-const note = (t) => { const m = $('#msg'); m.className = 'small info'; m.innerHTML = `<span class="spin"></span><span>${esc(t)}</span>`; };
+const note = (t, spin = true) => { const m = $('#msg'); m.className = 'small info'; m.innerHTML = `${spin ? '<span class="spin"></span>' : ''}<span>${esc(t)}</span>`; };
+const done = (t) => { note(t, false); const m = $('#msg'); setTimeout(() => { if (m.textContent === t) m.textContent = ''; }, 6000); };
 const NAME_LONG = { perf: 'Perf strategy', qa: 'QA' };
 const MODE_LONG = { full: 'full run', update: 'update run', strategy: 'run' };
 let busy = null, fastUntil = 0;
@@ -226,7 +227,7 @@ $('#runall').onclick = async () => {
 };
 $('#stopall').onclick = async () => {
   if (!confirm('Stop every running run?')) return;
-  try { const r = await api('POST', '/api/stop'); msg(''); note(`Stopped ${r.stopped} run${r.stopped === 1 ? '' : 's'}.`); } catch (e) { msg(e.message); }
+  try { const r = await api('POST', '/api/stop'); msg(''); done(`Stopped ${r.stopped} run${r.stopped === 1 ? '' : 's'}.`); } catch (e) { msg(e.message); }
   poll();
 };
 $('#resetsrv').onclick = async () => {
@@ -289,7 +290,7 @@ function clearDown(t) {
     close();
     try {
       const r = await api('POST', `/api/${t}/api/clear`, {});
-      state.detail[t] = null; msg(''); note(`Cleared ${r.runs} run${r.runs === 1 ? '' : 's'} and ${r.workspaces} workspace${r.workspaces === 1 ? '' : 's'} for ${NAMES[t]}.`);
+      state.detail[t] = null; msg(''); done(`Cleared ${r.runs} run${r.runs === 1 ? '' : 's'} and ${r.workspaces} workspace${r.workspaces === 1 ? '' : 's'} for ${NAMES[t]}.`);
       poll();
     } catch (e) { msg(e.message); }
   };
