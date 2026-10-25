@@ -10,7 +10,7 @@ One repo with everything: a local web page (the hub) plus the Performance Agent 
 
 No dependencies. Needs Node.js 18+ and a signed-in Claude Code CLI (`claude auth login`).
 
-**Demo video:** [docs/video/agent-hub-demo.mp4](docs/video/agent-hub-demo.mp4) (7 min walkthrough: install, every feature, benefits)
+**Demo video:** [docs/video/agent-hub-demo.mp4](docs/video/agent-hub-demo.mp4) (8 min walkthrough: install, every feature, benefits)
 
 ## Run it
 
