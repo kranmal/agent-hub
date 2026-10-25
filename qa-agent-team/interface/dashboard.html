@@ -214,7 +214,6 @@ code{background:var(--accent-soft);border-radius:6px;padding:1px 6px;font:12px u
           <label><input type="radio" name="mode" value="full" checked><span>Full QA</span></label>
           <label><input type="radio" name="mode" value="update"><span>Update</span></label>
         </div>
-        <label style="display:flex;gap:8px;align-items:center;font-weight:400"><input type="checkbox" id="pw"> Use Playwright agents (planner, generator, healer). Slower, costs more.</label>
         <label for="notes">Notes (optional)</label>
         <textarea id="notes" placeholder="It runs at http://localhost:3000, start it with npm run dev"></textarea>
         <details class="adv" id="adv">
@@ -276,7 +275,7 @@ $('form').onsubmit = async (e) => {
   $('go').disabled = true; $('formerr').textContent = '';
   try {
     const mode = document.querySelector('input[name="mode"]:checked').value;
-    const body = { target: $('target').value.trim(), mode, notes: $('notes').value.trim(), playwrightAgents: $('pw').checked };
+    const body = { target: $('target').value.trim(), mode, notes: $('notes').value.trim() };
     const model = $('model').value === '__custom' ? $('custom').value.trim() : $('model').value;
     if (model) body.model = model;
     if ($('effort').value) body.effort = $('effort').value;

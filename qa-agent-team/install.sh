@@ -21,11 +21,8 @@ install_item() { # src dest
   fi
   cp -R "$1" "$2"; echo "Installed: $2"
 }
-for f in "$HERE"/agents/qa-*.md "$HERE"/agents/playwright-test-*.md; do install_item "$f" "$TARGET/agents/$(basename "$f")"; done
+for f in "$HERE"/agents/qa-*.md; do install_item "$f" "$TARGET/agents/$(basename "$f")"; done
 install_item "$HERE/skills/qa-playwright" "$TARGET/skills/qa-playwright"
-install_item "$HERE/scripts/qa-playwright-mcp.json" "$TARGET/qa-playwright-mcp.json"
-install_item "$HERE/scripts/prepare-qa.mjs" "$TARGET/qa-prepare.mjs"
 
 echo; echo "Done. Start a QA run with:  claude --agent qa-lead"
-echo "Playwright agents mode (planner/generator/healer):  node $TARGET/qa-prepare.mjs . && claude --agent qa-lead --mcp-config $TARGET/qa-playwright-mcp.json"
 command -v node >/dev/null || echo "Note: Node.js 18+ is required to run the generated tests."
